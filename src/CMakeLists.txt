@@ -4,7 +4,7 @@ target_link_libraries(pgw_server
     PRIVATE
         nlohmann_json::nlohmann_json
         spdlog::spdlog
-        cpp-httplib::cpp-httplib
+        httplib::httplib
 )
 
 add_executable(pgw_client client/main.cpp)

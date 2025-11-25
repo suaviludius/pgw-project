@@ -1,6 +1,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include "config.h"
+
 int main(){
     std::cout << "PGW server start ..." << '\n';
 
