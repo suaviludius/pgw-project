@@ -33,3 +33,38 @@ sequenceDiagram
     Server->>CDRWriter: writeRecord(IMSI, action)
     Server-->>Client: "created"/"rejected"
 ```
+
+## Структура классов
+```mermaid
+classDiagram
+    class types {
+            <<namespace>>
+            +Ip : string
+            +Port : uint16_t
+            +Seconds : uint32_t
+            +FilePath : string
+            +Rate : uint32_t
+            +LogLevel : string
+            +Blacklist : list~string~
+    }
+
+    class Config {
+        -m_udpIp: types::Ip
+        -m_udpPort: types::Port
+        -m_sessionTimeoutSec: types::Seconds
+        -m_cdrFile: types::FilePath
+        -m_httpPort: types::Port
+        -m_gracefulShutdownRate: types::Rate
+        -m_logFile: types::FilePath
+        -m_logLevel: types::LogLevel
+        -m_blackList: types::Blacklist
+        -m_error: string
+        -m_verification: bool
+
+        -readConfigFile(confPath: string) void
+        -validateConfigData() void
+        -setDefaultConfig() void
+    }
+
+    Config ..> types : Использует
+```
