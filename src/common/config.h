@@ -1,34 +1,39 @@
 // Общая конфигурация файла
-//#include <nlohmann/json.cpp>
-#include <string>   // Для string
-#include <list>     // Для односвязного списка
-#include <cstdint>  // Для uint_fast
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#include "types.h"
 
 class Config{
+    types::Ip m_udpIp{};
+    types::Port m_udpPort{};
+    types::Seconds m_sessionTimeoutSec{};
+    types::FilePath m_cdrFile {};
+    types::Port m_httpPort{};
+    types::Rate m_gracefulShutdownRate{};
+    types::FilePath m_logFile {};
+    types::FilePath m_logLevel {};
+    types::Blacklist m_blackList;
 
-    std::string m_udpIp{};
-    std::uint_fast16_t m_udpPort{};             // Максимальое число 9999, больше 2^8, но меньше 2^16
-    std::uint_fast32_t m_sessionTimeoutSec{};   // Делаем больше, чтобы наверняка
-    std::string m_cdrFile {};
-    std::uint_fast16_t m_httpPort{};
-    std::uint_fast32_t m_gracefulShutdownRate{};
-    std::string m_logFile {};
-    std::string m_logLevel {};
-    std::list<std::string> m_blackList;       // Не требутеся доступ по индексу, поэтому можно использовать список
+    std::string m_error{};
+    bool m_verification{true};
 
-    std::string m_error{};                    // Ошибки при инициализации
-    bool m_verification{true};                // Флаг отсутсвтия ошибок
+    void readConfigFile(const std::string& confPath);
+    void validateConfigData();
+    void setDefaultConfig();
 
 public:
     explicit Config(const std::string& configPath); // Требуем вызов конструктора только с явным типом аргумента
 
-    const std::string& getUdpIp() const { return m_udpIp; }
-    uint16_t getUdpPort() const { return m_udpPort; }
-    uint32_t getSessionTimeoutSec() const {return m_sessionTimeoutSec; }
-    const std::string& getCdrFile() const { return m_cdrFile; }
-    uint16_t getHttpPort() const { return m_httpPort; }
-    uint32_t getGracefulShutdownRate() const { return m_gracefulShutdownRate; }
-    const std::string& getLogFile() const { return m_logFile; }
-    const std::string& getLogLevel() const { return m_logLevel; }
-    const std::list<std::string>& getBlacklist() const { return m_blacklist; }
+    const types::Ip& getUdpIp() const { return m_udpIp; }
+    types::Port getUdpPort() const { return m_udpPort; }
+    types::Seconds getSessionTimeoutSec() const {return m_sessionTimeoutSec; }
+    const types::FilePath& getCdrFile() const { return m_cdrFile; }
+    types::Port getHttpPort() const { return m_httpPort; }
+    types::Rate getGracefulShutdownRate() const { return m_gracefulShutdownRate; }
+    const types::FilePath& getLogFile() const { return m_logFile; }
+    const types::LogLevel& getLogLevel() const { return m_logLevel; }
+    const types::Blacklist& getBlacklist() const { return m_blackList; }
 };
+
+#endif // CONFIG_H
