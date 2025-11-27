@@ -37,15 +37,13 @@ sequenceDiagram
 ## Структура классов
 ```mermaid
 classDiagram
-    class types {
-            <<namespace>>
-            +Ip : string
-            +Port : uint16_t
-            +Seconds : uint32_t
-            +FilePath : string
-            +Rate : uint32_t
-            +LogLevel : string
-            +Blacklist : list~string~
+    class main {
+        <<function>>
+        Config config
+        SessionManager sessionManager
+        CdrWriter cdrWriter
+        UdpServer udpServer
+        HttpServer httpServer
     }
 
     class Config {
@@ -64,7 +62,53 @@ classDiagram
         -readConfigFile(confPath: string) void
         -validateConfigData() void
         -setDefaultConfig() void
+        +Config(string configPath)
     }
 
-    Config ..> types : Использует
-```
+    class UdpServer {
+
+    }
+
+    class HttpServer {
+
+    }
+
+    class SessionManager {
+
+    }
+
+    class Session {
+
+    }
+
+    class CdrWriter {
+
+    }
+
+    class Logger {
+
+    }
+
+    class types {
+            <<namespace>>
+            +Ip : string
+            +Port : uint16_t
+            +Seconds : uint32_t
+            +FilePath : string
+            +Rate : uint32_t
+            +LogLevel : string
+            +Blacklist : list~string~
+    }
+
+    main *--> Config : создает
+    main *--> SessionManager : создает
+    main *--> UdpServer : создает
+    main *--> HttpServer : создает
+    main *--> CdrWriter  : создает
+    SessionManager *--> Session : содержит
+    UdpServer --> SessionManager : зависит от
+    UdpServer --> CdrWriter : зависит от
+    HttpServer --> SessionManager : зависит от
+    Config ..> types : использует
+
+    ```
