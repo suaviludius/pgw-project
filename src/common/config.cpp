@@ -61,7 +61,7 @@ void Config::validateConfigData(){
 
     // Валидация таймаутов и лимитов
     if (m_sessionTimeoutSec <= constants::validation::MIN_SESSION_TIMEOUT) {
-        throw std::runtime_error("Session timeout must be greater than " +33
+        throw std::runtime_error("Session timeout must be greater than " +
               std::to_string(constants::validation::MIN_SESSION_TIMEOUT) +
               " seconds");
     }
