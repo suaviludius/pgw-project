@@ -25,15 +25,18 @@ class Config{
 public:
     explicit Config(const std::string& configPath); // Требуем вызов конструктора только с явным типом аргумента
 
-    const pgw::types::Ip& getUdpIp() const { return m_udpIp; }
+    pgw::types::ConstIp getUdpIp() const { return m_udpIp; }
     pgw::types::Port getUdpPort() const { return m_udpPort; }
     pgw::types::Seconds getSessionTimeoutSec() const {return m_sessionTimeoutSec; }
-    const pgw::types::FilePath& getCdrFile() const { return m_cdrFile; }
+    pgw::types::ConstFilePath getCdrFile() const { return m_cdrFile; }
     pgw::types::Port getHttpPort() const { return m_httpPort; }
     pgw::types::Rate getGracefulShutdownRate() const { return m_gracefulShutdownRate; }
-    const pgw::types::FilePath& getLogFile() const { return m_logFile; }
-    const pgw::types::LogLevel& getLogLevel() const { return m_logLevel; }
+    pgw::types::ConstFilePath getLogFile() const { return m_logFile; }
+    pgw::types::ConstLogLevel getLogLevel() const { return m_logLevel; }
     const pgw::types::Blacklist& getBlacklist() const { return m_blackList; }
+
+    std::string_view const getError(){ return m_error;}
+    bool isValid(){ return m_verification;}
 };
 
 #endif // CONFIG_H
