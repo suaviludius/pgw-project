@@ -4,7 +4,7 @@
 #include "config.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h> // Для записи логов в файл
-#include <spdlog/sinks/stdout_color_sinks.h> // Для вывода логов в консоль
+#include <spdlog/sinks/stdout_color_sinks.h> // Для цветного вывода логов в консоль
 
 // Зачем запихиваем логгер в класс?
 // 1) Класс статический, используем для создания
