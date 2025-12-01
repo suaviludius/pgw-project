@@ -33,7 +33,7 @@ void Logger::init(const Config& config){
 }
 
 Logger::LogLevelType Logger::parse_level(const std::string& level) {
-    static const std::map<std::string, spdlog::level::level_enum> level_map = {
+    static const std::map<std::string, spdlog::level::level_enum> level_map {
         {"TRACE", spdlog::level::trace},
         {"DEBUG", spdlog::level::debug},
         {"INFO", spdlog::level::info},
