@@ -36,7 +36,7 @@ struct ConfigTest : public testing::Test {
             throw std::runtime_error("Cannot create test config file");
         }
         file << content;
-        // file.close() автоматически в деструкто
+        file.close(); // Автоматически в деструкторе
     }
 
     bool configFileExists() const {
@@ -73,7 +73,7 @@ TEST_F(ConfigTest, SuccessfulReading) {
             "graceful_shutdown_rate": 5,
             "log_file": "file2.log",
             "log_level": "DEBUG",
-            "blacklist": ["192.168.0.0", "0.0.0.0"]
+            "blacklist": ["012340123401234", "000111222333444"]
     })");
     ASSERT_TRUE(configFileExists());
 
@@ -90,8 +90,8 @@ TEST_F(ConfigTest, SuccessfulReading) {
         EXPECT_EQ(config.getGracefulShutdownRate(), 5);
         EXPECT_EQ(config.getLogFile(), "file2.log");
         EXPECT_EQ(config.getLogLevel(), "DEBUG");
-        EXPECT_EQ(config.getBlacklist().front(), "192.168.0.0");
-        EXPECT_EQ(config.getBlacklist().back(), "0.0.0.0");
+        EXPECT_TRUE(config.blackListContains("012340123401234"));
+        EXPECT_TRUE(config.blackListContains("000111222333444"));
     });
 }
 
@@ -112,7 +112,7 @@ TEST_F(ConfigTest, UsesDefaultValues) {
         EXPECT_EQ(config.getCdrFile(), pgw::constants::defaults::CDR_FILE);
         EXPECT_EQ(config.getGracefulShutdownRate(), pgw::constants::defaults::GRACEFUL_SHUTDOWN_RATE);
         EXPECT_EQ(config.getLogFile(), pgw::constants::defaults::LOG_FILE);
-        EXPECT_EQ(config.getLogLevel(), pgw::constants::defaults::LOG_FILE);
+        EXPECT_EQ(config.getLogLevel(), pgw::constants::defaults::LEVEL);
         EXPECT_EQ(config.getBlacklist().size(),0);
     });
 }

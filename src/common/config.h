@@ -35,6 +35,7 @@ public:
     pgw::types::ConstLogLevel getLogLevel() const { return m_logLevel; }
     const pgw::types::Blacklist& getBlacklist() const { return m_blackList; }
 
+    bool blackListContains(std::string_view value);
     std::string_view const getError(){ return m_error;}
     bool isValid(){ return m_verification;}
 };

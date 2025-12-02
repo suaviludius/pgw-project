@@ -18,28 +18,28 @@ public:
     using LogLevelType = spdlog::level::level_enum;
 private:
     static LogPtrType m_logger;
-    static bool m_initialized;
 
     Logger() = default;
     ~Logger() = default;
-    static LogLevelType parse_level(const std::string& level);
+    static LogLevelType parse_level(std::string_view level);
 public:
-    static void init(const Config& config);
+    static void init(std::string_view logFile, std::string_view logLevel);
+    static void shutdown(); // Удаление созданного логгера
 
     // Базовые методы
-    static void trace(const std::string& message);
-    static void debug(const std::string& message);
-    static void info(const std::string& message);
-    static void warn(const std::string& message);
-    static void error(const std::string& message);
-    static void critical(const std::string& message);
+    static void trace(std::string_view message);
+    static void debug(std::string_view message);
+    static void info(std::string_view message);
+    static void warn(std::string_view message);
+    static void error(std::string_view message);
+    static void critical(std::string_view message);
 
     // Методы логики приложения
-    static void session_created(const std::string& imsi);
-    static void session_rejected(const std::string& imsi, const std::string& reason);
-    static void session_deleted(const std::string& imsi);
-    static void udp_request(const std::string& imsi, const std::string& response);
-    static void http_request(const std::string& endpoint, const std::string& client_ip);
+    static void session_created(std::string_view imsi);
+    static void session_rejected(std::string_view imsi, std::string_view reason);
+    static void session_deleted(std::string_view imsi);
+    static void udp_request(std::string_view imsi, std::string_view response);
+    static void http_request(std::string_view endpoint, std::string_view client_ip);
 
 };
 

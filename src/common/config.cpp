@@ -1,9 +1,12 @@
 #include "config.h"
 #include "constants.h"
 
+#include <nlohmann/json.hpp>
+
+#include <algorithm>
 #include <stdexcept>
 #include <fstream>
-#include <nlohmann/json.hpp>
+
 
 Config::Config(const std::string& configPath){
     try{
@@ -38,7 +41,7 @@ void Config::readConfigFile(const std::string& configPath){
     m_logLevel = jsonConfig.value("log_level",pgw::constants::defaults::LEVEL);
 
     if(jsonConfig.contains("blacklist") && jsonConfig["blacklist"].is_array()){
-        for (const auto& item : jsonConfig["numbers"]) {
+        for (const auto& item : jsonConfig["blacklist"]) {
             m_blackList.push_back(item);
         }
     }
@@ -90,4 +93,9 @@ void Config::setDefaultConfig() {
     m_logFile = pgw::constants::defaults::LOG_FILE;
     m_logLevel = pgw::constants::defaults::LEVEL;
     m_blackList.clear();
+}
+
+bool Config::blackListContains(std::string_view value) {
+    const pgw::types::Blacklist& blackList {getBlacklist()};
+    return std::find(blackList.begin(), blackList.end(), value) != blackList.end();
 }
