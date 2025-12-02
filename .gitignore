@@ -18,11 +18,11 @@ Makefile
 
 # Logs
 *.log
+logs/
 
 # Dependencies (downloaded by CMake)
 _deps/
 external/
 
-# Log files
-*.log
-logs/
+# tests
+test_config.json
