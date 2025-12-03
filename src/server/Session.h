@@ -16,7 +16,8 @@ public:
 
     pgw::types::ConstImsi getImsi() const { return m_imsi;}
     pgw::types::Seconds getAge() const {
-        return std::chrono::duration_cast<pgw::types::Seconds>(сlock::now() - m_createdTime);
+        auto age {std::chrono::duration_cast<std::chrono::seconds>(сlock::now() - m_createdTime).count()};
+        return static_cast<pgw::types::Seconds>(age);
     }
 };
 
