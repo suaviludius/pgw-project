@@ -2,24 +2,21 @@
 #define SESSION_H
 
 #include "types.h"
-#include <chrono>
 
 class Session {
 public:
-    using ClockType = std::chrono::steady_clock;
+    using сlock = std::chrono::steady_clock; // Специальные часы для измерения интервалов
 private:
-    std::string_view m_imsi;
-    ClockType::time_point m_createdTime;
+    pgw::types::ConstImsi m_imsi;
+    сlock::time_point m_createdTime; // Конкретная точка на временной шкале
 public:
-    Session(std::string_view imsi) : m_imsi{imsi}, m_createdTime{ClockType::now()}{
+    explicit Session(pgw::types::ConstImsi imsi) : m_imsi{imsi}, m_createdTime{сlock::now()}{
         // . . .
     };
 
-    std::string_view getImsi(){ return m_imsi;}
-    ClockType::time_point getCreatedTime(){ return m_createdTime;}
-
-    std::chrono::seconds getAge(){
-        return std::chrono::duration_cast<std::chrono::seconds>(ClockType::now() - m_createdTime);
+    pgw::types::ConstImsi getImsi() const { return m_imsi;}
+    pgw::types::Seconds getAge() const {
+        return std::chrono::duration_cast<pgw::types::Seconds>(сlock::now() - m_createdTime);
     }
 };
 
