@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <list>
+#include <chrono>
 
 //  ATTENTION
 //  В случае замены типа std::string на иной, необходимо также изменить
@@ -12,7 +13,7 @@
 namespace pgw::types {
     using Port = uint16_t;          // 0-65535 - достаточно uint16_t
     using Ip = std::string;
-    using Seconds = uint32_t;       // даже 100 лет влезет - достаточно uint32_t
+    using Seconds = std::chrono::seconds;       // тип для секунд
     using Rate = uint32_t;          // Делаем больше, чтобы наверняка
     using FilePath = std::string;
     using LogLevel = std::string;
@@ -21,5 +22,6 @@ namespace pgw::types {
     using ConstIp = std::string_view;
     using ConstFilePath = std::string_view;
     using ConstLogLevel = std::string_view;
+    using ConstImsi = std::string_view;
 }
 #endif // TYPES_H
