@@ -42,7 +42,7 @@ void Config::readConfigFile(const std::string& configPath){
 
     if(jsonConfig.contains("blacklist") && jsonConfig["blacklist"].is_array()){
         for (const auto& item : jsonConfig["blacklist"]) {
-            m_blackList.push_back(item);
+            m_blackList.add(item);
         }
     }
 }
@@ -93,9 +93,4 @@ void Config::setDefaultConfig() {
     m_logFile = pgw::constants::defaults::LOG_FILE;
     m_logLevel = pgw::constants::defaults::LEVEL;
     m_blackList.clear();
-}
-
-bool Config::blackListContains(std::string_view value) {
-    const pgw::types::Blacklist& blackList {getBlacklist()};
-    return std::find(blackList.begin(), blackList.end(), value) != blackList.end();
 }
