@@ -6,22 +6,22 @@
 
 namespace pgw::constants {
     namespace defaults {
-        inline constexpr types::ConstIp UDP_IP {"0.0.0.0"};
-        inline constexpr types::Port UDP_PORT {9000};
-        inline constexpr types::Port HTTP_PORT {8080};
+        inline constexpr pgw::types::ConstIp UDP_IP {"0.0.0.0"};
+        inline constexpr pgw::types::Port UDP_PORT {9000};
+        inline constexpr pgw::types::Port HTTP_PORT {8080};
 
-        inline constexpr types::Seconds TIMEOUT_SEC {30};
-        inline constexpr types::Rate GRACEFUL_SHUTDOWN_RATE {10};
+        inline constexpr pgw::types::Seconds TIMEOUT_SEC {30};
+        inline constexpr pgw::types::Rate GRACEFUL_SHUTDOWN_RATE {10};
 
-        inline constexpr types::ConstFilePath CDR_FILE {"cdr.log"};
-        inline constexpr types::ConstFilePath LOG_FILE {"pgw.log"};
-        inline constexpr types::ConstLogLevel LEVEL {"INFO"};
+        inline constexpr pgw::types::ConstFilePath CDR_FILE {"cdr.log"};
+        inline constexpr pgw::types::ConstFilePath LOG_FILE {"pgw.log"};
+        inline constexpr pgw::types::ConstLogLevel LEVEL {"INFO"};
     }
     namespace validation {
-        inline constexpr types::Port MIN_PORT {1024};
-        inline constexpr types::Port MAX_PORT {65535};
-        inline constexpr types::Seconds MIN_SESSION_TIMEOUT {0};
-        inline constexpr types::Rate MIN_GRACEFUL_SHUTDOWN_RATE {0};
+        inline constexpr pgw::types::Port MIN_PORT {1024};
+        inline constexpr pgw::types::Port MAX_PORT {65535};
+        inline constexpr pgw::types::Seconds MIN_SESSION_TIMEOUT {0};
+        inline constexpr pgw::types::Rate MIN_GRACEFUL_SHUTDOWN_RATE {0};
         inline constexpr size_t IMSI_SIZE{15};
     }
 }
