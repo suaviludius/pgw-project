@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <string>
-#include <list>
+#include <unordered_set>
 #include <chrono>
 
 //  ATTENTION
@@ -23,35 +23,29 @@ namespace pgw::types {
     using ConstLogLevel = std::string_view;
     using ConstImsi = std::string_view;
 
-    // Для черного списка сделаем свой тип, чтобы иметь удобный интерфейс
-    class Blacklist {
+    // Для sessions и blacklist сделаем свой тип, чтобы иметь удобный интерфейс
+    template <typename T>
+    class Container {
     public:
-        using list = std::list<std::string_view>;  // Не требутеся доступ по индексу, поэтому можно использовать список
+        using ctype = std::unordered_set<T>;  // Не требутеся доступ по индексу, поэтому можно использовать список
     private:
-        list m_blacklist;
+        ctype m_container;
     public:
-        Blacklist() = default;
-        explicit Blacklist(list blacklist) : m_blacklist{blacklist} {
+        Container() = default;
+        explicit Container(ctype container) : m_container(std::move(container)) {
             // . . .
         }
 
-        bool contains(pgw::types::ConstImsi imsi) const {
-            return std::find(m_blacklist.begin(), m_blacklist.end(), imsi) != m_blacklist.end();
+        bool add(T value) {
+            auto [it, inserted] = m_container.insert(std::move(value)); // it - итератор на элемент, inserted - успех операции
+            return inserted;
         }
 
-        void add(pgw::types::ConstImsi imsi) {
-            m_blacklist.push_back(imsi);
-        }
-
-        // bool remove(pgw::types::ConstImsi imsi);
-
-        // Итераторы
-        auto begin() const { return m_blacklist.begin(); }
-        auto end() const { return m_blacklist.end(); }
-        // Размер
-        size_t size() const { return m_blacklist.size(); }
-        bool empty() const { return m_blacklist.empty(); }
-        void clear() { m_blacklist.clear(); }
+        bool contains(const T& value) const { return m_container.find(value) != m_container.end();}
+        bool remove(const T& value) { return m_container.erase(value) > 0;}
+        void clear() { m_container.clear();}
+        size_t size() const { return m_container.size();}
+        bool empty() const { return m_container.empty();}
     };
 }
 #endif // TYPES_H
