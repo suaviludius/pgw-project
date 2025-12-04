@@ -14,7 +14,7 @@ namespace pgw::types {
     using Port = uint16_t;          // 0-65535 - достаточно uint16_t
     using Ip = std::string;
     using Seconds = int64_t;        // Тип для секунд
-    using Rate = uint32_t;          // Делаем больше, чтобы наверняка
+    using Rate = int64_t;           // Тип для миллисекунд
     using FilePath = std::string;
     using LogLevel = std::string;
 
@@ -42,10 +42,14 @@ namespace pgw::types {
         }
 
         bool contains(const T& value) const { return m_container.find(value) != m_container.end();}
-        bool remove(const T& value) { return m_container.erase(value) > 0;}
+        std::iterator erase(std::iterator it) { return m_container.erase(it);}
         void clear() { m_container.clear();}
         size_t size() const { return m_container.size();}
         bool empty() const { return m_container.empty();}
+
+        // Итераторы для поиска внутри контейнера
+        auto begin() const { return m_set.begin(); }
+        auto end() const { return m_set.end(); }
     };
 }
 #endif // TYPES_H
