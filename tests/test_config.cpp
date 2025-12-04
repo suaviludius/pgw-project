@@ -90,8 +90,8 @@ TEST_F(ConfigTest, SuccessfulReading) {
         EXPECT_EQ(config.getGracefulShutdownRate(), 5);
         EXPECT_EQ(config.getLogFile(), "file2.log");
         EXPECT_EQ(config.getLogLevel(), "DEBUG");
-        EXPECT_TRUE(config.blackListContains("012340123401234"));
-        EXPECT_TRUE(config.blackListContains("000111222333444"));
+        EXPECT_TRUE(config.getBlacklist().contains("012340123401234"));
+        EXPECT_TRUE(config.getBlacklist().contains("000111222333444"));
     });
 }
 
