@@ -10,44 +10,44 @@ SessionManager::SessionManager(const Config& config) :
     Logger::info("Session Manager created");
 }
 
-auto SessionManager::findInSessions(pgw::types::ConstImsi imsi) {
+auto SessionManager::findSession(pgw::types::ConstImsi imsi) {
     return std::find_if(m_sessions.begin(),m_sessions.end(), // Ищем среди активных сессий imsi пришедшей
     [&imsi](const auto& session){
-            return (session->getImsi() == imsi);
+            return session->getImsi() == imsi;
     });
 }
 
-void SessionManager::createSession(pgw::types::ConstImsi imsi){
+CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
     if(m_blacklist.contains(imsi)){
         Logger::session_rejected(imsi, "blacklist contain imsi");
-        return;
+        return CreateResult::REJECTED_BLACKLIST;
     }
 
     // Проверяем существует ли сессия
-    auto it {findInSessions(imsi)};
-    if (it != m_sessions.end()){
+    if (hasSession(imsi)){
         Logger::debug("Session already exists for IMSI:" + static_cast<std::string>(imsi));
-        return;
+        return CreateResult::ALREADY_EXISTS;
     }
 
     try {
-        auto session {std::make_unique<Session>(imsi)}; // Создаём новую сессию через unique_ptr
+        auto session {std::make_unique<Session>(imsi)};     // Создаём новую сессию через unique_ptr
         bool inserted {m_sessions.add(std::move(session))}; // Перемещаем сессию в контейнер
         if(inserted){
             Logger::session_created(imsi);
+            return CreateResult::CREATED;
         }
         else{
             Logger::error("Filed to add session for IMSI:" + static_cast<std::string>(imsi));
+            return CreateResult::ERROR;
         }
     }
     catch (const std::exception& e){
         Logger::error("Filed to create session for IMSI: {}. {}", static_cast<std::string>(imsi), e.what());
     }
-    return;
 }
 
 void SessionManager::removeSession(pgw::types::ConstImsi imsi){
-    auto it {findInSessions(imsi)};
+    auto it {findSession(imsi)};
     if (it != m_sessions.end()){
         m_sessions.erase(it);
         Logger::session_deleted(imsi);
