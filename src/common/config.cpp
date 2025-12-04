@@ -41,8 +41,8 @@ void Config::readConfigFile(const std::string& configPath){
     m_logLevel = jsonConfig.value("log_level",pgw::constants::defaults::LEVEL);
 
     if(jsonConfig.contains("blacklist") && jsonConfig["blacklist"].is_array()){
-        for (const auto& item : jsonConfig["blacklist"]) {
-            m_blackList.add(item);
+        for (const auto& imsi : jsonConfig["blacklist"]) { // Проходим по всем JSON ОБЪЕКТАМ (не строкам) из "blacklist"
+            m_blackList.add(imsi.get<pgw::types::ConstImsi>());
         }
     }
 }
@@ -78,7 +78,7 @@ void Config::validateConfigData(){
     // Валидация IMSI в blackList
     for (const auto& imsi : m_blackList) {
         if (imsi.size() != pgw::constants::validation::IMSI_SIZE) {
-            throw std::runtime_error("Invalid IMSI in blacklist: " + imsi);
+            throw std::runtime_error("Invalid IMSI in blacklist: " + static_cast<std::string>(imsi));
         }
     }
 }

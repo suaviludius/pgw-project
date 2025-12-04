@@ -13,7 +13,7 @@ class Config{
     pgw::types::Rate m_gracefulShutdownRate{};
     pgw::types::FilePath m_logFile {};
     pgw::types::FilePath m_logLevel {};
-    pgw::types::Blacklist m_blackList;
+    pgw::types::Container<pgw::types::ConstImsi> m_blackList;
 
     std::string m_error{};
     bool m_verification{true};
@@ -33,7 +33,7 @@ public:
     pgw::types::Rate getGracefulShutdownRate() const { return m_gracefulShutdownRate; }
     pgw::types::ConstFilePath getLogFile() const { return m_logFile; }
     pgw::types::ConstLogLevel getLogLevel() const { return m_logLevel; }
-    const pgw::types::Blacklist& getBlacklist() const { return m_blackList; }
+    const auto& getBlacklist() const { return m_blackList; } // Длинный тип, поэтому auto
 
     std::string_view const getError(){ return m_error;}
     bool isValid(){ return m_verification;}
