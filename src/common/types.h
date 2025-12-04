@@ -28,6 +28,7 @@ namespace pgw::types {
     class Container {
     public:
         using ctype = std::unordered_set<T>;  // Не требутеся доступ по индексу, поэтому можно использовать список
+        using iterator = typename std::unordered_set<T>::iterator;
     private:
         ctype m_container;
     public:
@@ -42,14 +43,14 @@ namespace pgw::types {
         }
 
         bool contains(const T& value) const { return m_container.find(value) != m_container.end();}
-        std::iterator erase(std::iterator it) { return m_container.erase(it);}
+        iterator erase(iterator it) { return m_container.erase(it);}
         void clear() { m_container.clear();}
         size_t size() const { return m_container.size();}
         bool empty() const { return m_container.empty();}
 
         // Итераторы для поиска внутри контейнера
-        auto begin() const { return m_set.begin(); }
-        auto end() const { return m_set.end(); }
+        iterator begin() const { return m_container.begin(); }
+        iterator end() const { return m_container.end(); }
     };
 }
 #endif // TYPES_H
