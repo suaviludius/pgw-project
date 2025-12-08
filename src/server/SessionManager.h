@@ -1,7 +1,7 @@
 #ifndef SESSION_MANAGER_H
 #define SESSION_MANAGER_H
 
-#include "config.h"
+#include "types.h"
 #include "Session.h"
 
 class SessionManager {
@@ -12,16 +12,22 @@ public:
         ALREADY_EXISTS,
         ERROR
     };
+    using sessions = pgw::types::Container<std::unique_ptr<Session>>;
 
 private:
-    pgw::types::Container<pgw::types::ConstImsi> m_blacklist;
-    pgw::types::Container<std::unique_ptr<Session>> m_sessions; // RAII, поэтому используем умные указатели
+    pgw::types::Blacklist m_blacklist;
     pgw::types::Seconds m_sessionTimeoutSec;
     pgw::types::Rate m_shutdownRate;
+    sessions m_sessions; // RAII, поэтому используем умные указатели
 
-    auto findSession(pgw::types::ConstImsi imsi); // Для внутренних методов auto можно использовать
+    sessions::iterator findSession(pgw::types::ConstImsi imsi); // Для внутренних методов auto можно использовать
+    sessions::const_iterator findSession(pgw::types::ConstImsi imsi) const; // версия для константных методов
 public:
-    explicit SessionManager(const Config& config);
+    explicit SessionManager(
+        const pgw::types::Blacklist& blacklist,
+        const pgw::types::Seconds timeout,
+        const pgw::types::Rate rate
+    );
     CreateResult createSession(pgw::types::ConstImsi imsi);
     void removeSession(pgw::types::ConstImsi imsi);
     void gracefulShutdown(pgw::types::Rate rate);

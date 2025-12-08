@@ -3,21 +3,31 @@
 
 #include <thread>
 
-SessionManager::SessionManager(const Config& config) :
-    m_sessionTimeoutSec{config.getSessionTimeoutSec()},
-    m_blacklist{std::move(config.getBlacklist())},
-    m_shutdownRate{config.getGracefulShutdownRate()} { // Блэк лист в конфиге я больше использовать не собираюсь
+SessionManager::SessionManager(
+    const pgw::types::Blacklist& blacklist,
+    const pgw::types::Seconds timeout,
+    const pgw::types::Rate rate
+) : m_blacklist{blacklist},
+    m_sessionTimeoutSec{timeout},
+    m_shutdownRate{rate} {
     Logger::info("Session Manager created");
 }
 
-auto SessionManager::findSession(pgw::types::ConstImsi imsi) {
+SessionManager::sessions::iterator SessionManager::findSession(pgw::types::ConstImsi imsi) {
     return std::find_if(m_sessions.begin(),m_sessions.end(), // Ищем среди активных сессий imsi пришедшей
     [&imsi](const auto& session){
             return session->getImsi() == imsi;
     });
 }
 
-CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
+SessionManager::sessions::const_iterator SessionManager::findSession(pgw::types::ConstImsi imsi) const{
+    return std::find_if(m_sessions.begin(),m_sessions.end(), // Ищем среди активных сессий imsi пришедшей
+    [&imsi](const auto& session){
+            return session->getImsi() == imsi;
+    });
+}
+
+SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
     if(m_blacklist.contains(imsi)){
         Logger::session_rejected(imsi, "blacklist contain imsi");
         return CreateResult::REJECTED_BLACKLIST;
@@ -42,7 +52,8 @@ CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
         }
     }
     catch (const std::exception& e){
-        Logger::error("Filed to create session for IMSI: {}. {}", static_cast<std::string>(imsi), e.what());
+        Logger::error("Filed to create session for IMSI:" + static_cast<std::string>(imsi) + static_cast<std::string>(e.what()));
+        return CreateResult::ERROR;
     }
 }
 
