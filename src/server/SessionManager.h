@@ -4,6 +4,8 @@
 #include "types.h"
 #include "Session.h"
 
+#include <memory> // Для unique_ptr
+
 class SessionManager {
 public:
     enum class CreateResult {

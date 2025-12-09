@@ -2,6 +2,7 @@
 #include "logger.h"
 
 #include <thread>
+#include <algorithm>
 
 SessionManager::SessionManager(
     const pgw::types::Blacklist& blacklist,
@@ -83,14 +84,14 @@ void SessionManager::cleanTimeoutSessions(){
 void SessionManager::gracefulShutdown(pgw::types::Rate rate){
     Logger::info("Graceful shutdown start");
     auto it {m_sessions.begin()};
-    while (it != m_sessions.end()) {
+    while ((it != m_sessions.end()) && (rate-- > 0)) {
         auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
+        // Задержка для контроля скорости
+        while ((*it)->getAge() < m_sessionTimeoutSec) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(m_sessionTimeoutSec));
+        }
         it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
         Logger::session_deleted(imsi);
-        // Задержка для контроля скорости
-        if (m_shutdownRate > 0 && it != m_sessions.end()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(m_shutdownRate));
-        }
     }
     Logger::info("Graceful shutdown completed");
 }
