@@ -37,6 +37,7 @@ target_include_directories(
 )
 target_include_directories(
     test_session_manager PRIVATE
+    ${CMAKE_SOURCE_DIR}/tests/mocks # Важно указать перед common, где лежит настоящий Logger
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/server
 )
@@ -58,4 +59,5 @@ target_link_libraries(
     test_session_manager PRIVATE
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
 )
