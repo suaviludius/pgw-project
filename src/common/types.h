@@ -29,6 +29,7 @@ namespace pgw::types {
     public:
         using ctype = std::unordered_set<T>;  // Не требутеся доступ по индексу, поэтому можно использовать список
         using iterator = typename std::unordered_set<T>::iterator;
+        using const_iterator = typename std::unordered_set<T>::const_iterator;
     private:
         ctype m_container;
     public:
@@ -49,8 +50,13 @@ namespace pgw::types {
         bool empty() const { return m_container.empty();}
 
         // Итераторы для поиска внутри контейнера
-        iterator begin() const { return m_container.begin(); }
-        iterator end() const { return m_container.end(); }
+        iterator begin() { return m_container.begin(); }
+        iterator end() { return m_container.end(); }
+        // Константные версии
+        const_iterator begin() const { return m_container.begin(); }  // const_iterator
+        const_iterator end() const { return m_container.end(); }      // const_iterator
     };
+
+    using Blacklist = pgw::types::Container<pgw::types::ConstImsi>;
 }
 #endif // TYPES_H

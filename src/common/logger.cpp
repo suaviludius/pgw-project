@@ -1,8 +1,12 @@
 #include "logger.h"
+
+#include <spdlog/sinks/rotating_file_sink.h> // Для записи логов в файл
+#include <spdlog/sinks/stdout_color_sinks.h> // Для цветного вывода логов в консоль
+
 #include <iostream> // Для использования std::cerr
 #include <map>
 
-Logger::LogPtrType Logger::m_logger = nullptr;
+Logger::logger Logger::m_logger = nullptr;
 
 void Logger::init(std::string_view logFile, std::string_view logLevel){
     if (m_logger) {
@@ -36,7 +40,7 @@ void Logger::init(std::string_view logFile, std::string_view logLevel){
     }
 }
 
-Logger::LogLevelType Logger::parse_level(std::string_view level) {
+Logger::level Logger::parse_level(std::string_view level) {
     static const std::map<std::string_view, spdlog::level::level_enum> level_map {
         {"TRACE", spdlog::level::trace},
         {"DEBUG", spdlog::level::debug},

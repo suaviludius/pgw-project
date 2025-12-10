@@ -13,7 +13,7 @@ class Config{
     pgw::types::Rate m_gracefulShutdownRate{};
     pgw::types::FilePath m_logFile {};
     pgw::types::FilePath m_logLevel {};
-    pgw::types::Container<pgw::types::ConstImsi> m_blackList;
+    pgw::types::Blacklist m_blackList;
 
     std::string m_error{};
     bool m_verification{true};

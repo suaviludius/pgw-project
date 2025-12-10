@@ -1,10 +1,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "config.h"
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/rotating_file_sink.h> // Для записи логов в файл
-#include <spdlog/sinks/stdout_color_sinks.h> // Для цветного вывода логов в консоль
 
 // Зачем запихиваем логгер в класс?
 // 1) Класс статический, используем для создания
@@ -14,14 +11,14 @@
 
 class Logger {
 public:
-    using LogPtrType = std::shared_ptr<spdlog::logger>;
-    using LogLevelType = spdlog::level::level_enum;
+    using logger = std::shared_ptr<spdlog::logger>;
+    using level = spdlog::level::level_enum;
 private:
-    static LogPtrType m_logger;
+    static logger m_logger;
 
     Logger() = default;
     ~Logger() = default;
-    static LogLevelType parse_level(std::string_view level);
+    static level parse_level(std::string_view level);
 public:
     static void init(std::string_view logFile, std::string_view logLevel);
     static void shutdown(); // Удаление созданного логгера
