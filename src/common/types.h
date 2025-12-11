@@ -14,7 +14,7 @@ namespace pgw::types {
     using Port = uint16_t;          // 0-65535 - достаточно uint16_t
     using Ip = std::string;
     using Seconds = int64_t;        // Тип для секунд
-    using Rate = int64_t;           // Тип для миллисекунд
+    using Rate = int64_t;           // Тип для количества сессий на удаление
     using FilePath = std::string;
     using LogLevel = std::string;
 
