@@ -1,5 +1,7 @@
 #include "UdpServer.h"
 #include "logger.h"
+#include <string.h> // memset
+#include <cstring>
 
 
 UdpServer::UdpServer(SessionManager& sessionManager,
