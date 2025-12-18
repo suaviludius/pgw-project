@@ -1,7 +1,5 @@
 #include "UdpServer.h"
 #include "logger.h"
-#include <string.h> // memset
-#include <cstring>
 
 
 UdpServer::UdpServer(SessionManager& sessionManager,
@@ -9,89 +7,52 @@ UdpServer::UdpServer(SessionManager& sessionManager,
                      pgw::types::ConstIp ip,
                      pgw::types::Port port)
     : m_sessionManager{sessionManager},
-      m_cdrWriter{cdrWriter} {
-
-    if (inet_pton(AF_INET, ip.c_str(), &m_socketIp) != 1) { // Заносим адресс в переменную
-        throw std::runtime_error("Invalid UDP IP address for server");
-    }
-    memset(&m_socketIPv4, 0, sizeof(m_socketIPv4)); // Заполняем структуру нулями
-    m_socketIPv4.sin_addr = m_socketIp; // IP
-    m_socketIPv4.sin_family = AF_INET; // IPv4
-    m_socketIPv4.sin_port = htons(port); // Преобразует порядок байт в сетевой (big-endian)
-    m_socket = reinterpret_cast<struct sockaddr* > (&m_socketIPv4); // Для работ с функциями
+      m_cdrWriter{cdrWriter},
+      m_ip{ip},
+      m_port{port}{
+    Logger::info("UDP server initialised");
 }
 
 UdpServer::~UdpServer(){
     stop();
 }
 
-bool UdpServer::start(){
+void UdpServer::start(){
     if(m_running) {
         Logger::warn("UDP server already running");
-        return true;
+        return;
     }
-    if(!createSocket()){
-        Logger::warn("UDP socket create failed");
-        return false;
+    try{
+        m_socket.bind(m_ip,m_port);
+        m_running = true;
+        Logger::info("UDP server sucseccdully start");
+        // run()
     }
-    m_running = true;
-    Logger::info("UDP server started");
-    return true;
+    catch(const std::exception& e){
+        m_running = false;
+    }
 }
-
 
 void UdpServer::stop(){
-    // . . .
-}
-
-
-bool UdpServer::isRunning() const{
-    // . . .
-}
-
-
-bool UdpServer::createSocket(){
-    // Создаем дискриптор для сокета IPv4 + UDP
-    m_socketFd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (m_socketFd < 0) {
-        Logger::error("Filed socket()");
-        return false;
-    }
-    // Включаем повторное использование порта
-    int reuse = 1;
-    if (setsockopt(m_socketFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-        Logger::error("Filed setsockopt() for reusing port");
-    }
-    run();
-    return true;
+    if(!m_running) return;
+    m_running = false;
+    Logger::info("UDP server stopped");
 }
 
 
 bool UdpServer::run(){
-    char buffer[MAX_DATAGRAM_SIZE];
-    while(1){
-        sockaddr_in clientSocketIPv4{};
-        socklen_t clientSocketLen = sizeof(sockaddr_in);
-        sockaddr* clientSocket = reinterpret_cast<struct sockaddr*>(&clientSocketIPv4);
-
-        ssize_t bufferCount = recvfrom(m_socketFd, buffer, sizeof(buffer),0,clientSocket, &clientSocketLen);
-        if (bufferCount < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-                // Таймаут или прерывание - продолжаем цикл
-                continue;
+    while(m_running){
+        try{
+            auto packet = m_socket.recieve();
+            if(!packet.data.empty()){
+                // . . .
             }
-            Logger::error("Failed recvfrom()" + strerror(errno));
-            break;
         }
-
-        pgw::types::ConstImsi imsi { getBufferImsi(buffer, bufferCount) };
-        if(imsi.empty()){
-            Logger::warn("Invalid UDP imsi");
+        catch (const std::system_error& e) {
+            // . . .
         }
-        auto result = m_sessionManager.createSession(imsi);
-        switch(result){
-            case::SessionManager::CreateResult::ALREADY_EXISTS:
-                CdrWriter();
+        catch(const std::exception& e){
+            Logger::error("UDP server error: " + std::string(e.what()));
         }
     }
 }
