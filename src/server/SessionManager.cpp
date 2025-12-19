@@ -14,6 +14,10 @@ SessionManager::SessionManager(
     Logger::info("Session Manager created");
 }
 
+SessionManager::~SessionManager(){
+    Logger::info("Session Manager deleted");
+}
+
 SessionManager::sessions::iterator SessionManager::findSession(pgw::types::ConstImsi imsi) {
     return std::find_if(m_sessions.begin(),m_sessions.end(), // Ищем среди активных сессий imsi пришедшей
     [&imsi](const auto& session){
@@ -30,13 +34,13 @@ SessionManager::sessions::const_iterator SessionManager::findSession(pgw::types:
 
 SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
     if(m_blacklist.contains(imsi)){
-        Logger::session_rejected(imsi, "blacklist contain imsi");
+        Logger::warn("Session rejected (blacklisted) for IMSI: " + std::string(imsi));
         return CreateResult::REJECTED_BLACKLIST;
     }
 
     // Проверяем существует ли сессия
     if (hasSession(imsi)){
-        Logger::debug("Session already exists for IMSI:" + static_cast<std::string>(imsi));
+        Logger::debug("Session already exists for IMSI: " + std::string(imsi));
         return CreateResult::ALREADY_EXISTS;
     }
 
@@ -44,16 +48,16 @@ SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi
         auto session {std::make_unique<Session>(imsi)};     // Создаём новую сессию через unique_ptr
         bool inserted {m_sessions.add(std::move(session))}; // Перемещаем сессию в контейнер
         if(inserted){
-            Logger::session_created(imsi);
+            Logger::info("Session created for IMSI: " + std::string(imsi));
             return CreateResult::CREATED;
         }
         else{
-            Logger::error("Filed to add session for IMSI:" + static_cast<std::string>(imsi));
+            Logger::error("Session creation failed for IMSI: " + std::string(imsi));
             return CreateResult::ERROR;
         }
     }
     catch (const std::exception& e){
-        Logger::error("Filed to create session for IMSI:" + static_cast<std::string>(imsi) + static_cast<std::string>(e.what()));
+        Logger::error("Session creation failed (exception) for IMSI: " + std::string(imsi) + static_cast<std::string>(e.what()));
         return CreateResult::ERROR;
     }
 }
@@ -82,7 +86,7 @@ void SessionManager::cleanTimeoutSessions(){
 }
 
 void SessionManager::gracefulShutdown(pgw::types::Rate rate){
-    Logger::info("Graceful shutdown start");
+    Logger::info("Sessions graceful shutdown start");
     auto it {m_sessions.begin()};
     while ((it != m_sessions.end()) && (rate-- > 0)) {
         auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
@@ -93,5 +97,5 @@ void SessionManager::gracefulShutdown(pgw::types::Rate rate){
         it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
         Logger::session_deleted(imsi);
     }
-    Logger::info("Graceful shutdown completed");
+    Logger::info("Sessions graceful shutdown completed");
 }

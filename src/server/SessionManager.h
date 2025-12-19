@@ -30,6 +30,8 @@ public:
         const pgw::types::Seconds timeout,
         const pgw::types::Rate rate
     );
+    ~SessionManager();
+
     CreateResult createSession(pgw::types::ConstImsi imsi);
     void removeSession(pgw::types::ConstImsi imsi);
     void gracefulShutdown(pgw::types::Rate rate);
