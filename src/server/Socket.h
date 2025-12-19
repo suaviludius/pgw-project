@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+// Для Unix систем
 #include <netinet/in.h> // структуры сокетов
 
 class Socket {

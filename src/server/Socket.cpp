@@ -12,14 +12,14 @@ Socket::Socket(){
     // Создаем дискриптор для сокета IPv4 + UDP
     m_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (m_fd < 0) {
-        throw std::system_error(errno, std::system_category(), "Filed socket()");
+        throw std::system_error(errno, std::system_category(), "Socket create failed (socket()): ");
     }
     // Включаем повторное использование порта
     int reuse = 1;
     if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-        throw std::system_error(errno, std::system_category(), "Filed setsockopt() for reusing port");
+        throw std::system_error(errno, std::system_category(), "Socket create failed (setsockopt() for reusing port): ");
     }
-    Logger::debug("Socket created. fd: " + std::to_string(m_fd));
+    Logger::debug("Socket created");
 }
 
 Socket::~Socket(){
@@ -50,7 +50,7 @@ void Socket::bind(pgw::types::ConstIp ip, pgw::types::Port port){
         throw std::system_error(errno, std::system_category(), "Failed to bind socket to " + std::string(ip) + ":" + std::to_string(port));
     }
 
-    Logger::info("Socket bind. " + addrToString(addr));
+    Logger::info("Socket bind " + addrToString(addr));
     //m_socket = reinterpret_cast<struct sockaddr* > (&addr); // Для работ с функциями
 }
 
@@ -61,13 +61,13 @@ Socket::Packet Socket::recieve(){
     ssize_t bytesReceived = ::recvfrom(m_fd, buffer.data(), buffer.size(), 0,
                                       reinterpret_cast<sockaddr*>(&addr), &addrLen);
     if(bytesReceived < 0){
-        throw std::system_error(errno, std::system_category(), "Failed to receive data");
+        throw std::system_error(errno, std::system_category(), "Socket failed received bytes");
     }
 
     buffer.resize(bytesReceived); // Изменяем размер вектора до фактического количества принятых байт
     std::string data(buffer.begin(), buffer.end());
 
-    Logger::trace("Received: " + std::to_string(bytesReceived) + " bytes. " + addrToString(addr));
+    Logger::trace("Received " + std::to_string(bytesReceived) + " bytes on socket: " + addrToString(addr));
 
     return Packet{std::move(data), addr};
 }
@@ -79,7 +79,7 @@ bool Socket::send(std::string_view data, const sockaddr_in& addr){
         throw std::system_error(errno, std::system_category(), "Failed to sent data");
     }
 
-    Logger::trace("Sent " + std::to_string(bytesSent) + " bytes. " + addrToString(addr));
+    Logger::trace("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));
 }
 
 std::string Socket::addrToString(const sockaddr_in& addr) {
