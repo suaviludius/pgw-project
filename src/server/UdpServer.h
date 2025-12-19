@@ -5,10 +5,6 @@
 #include "CdrWriter.h"
 #include "Socket.h"
 
-#//include <windows.h>
-
-// Для Unix систем
-
 class UdpServer{
 public:
     static constexpr uint32_t MAX_DATAGRAM_SIZE {1500};
@@ -24,10 +20,9 @@ private:
 
     bool m_running;
 
-    bool run();
-    bool sendResponse();
+    void run();
 
-    std::string binaryToSTring(const char* buffer, size_t length);
+    bool validateImsi(const std::string& imsi);
 public:
     UdpServer(SessionManager& sessionManager,
               CdrWriter& m_cdrWriter,
