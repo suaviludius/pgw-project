@@ -18,6 +18,7 @@ namespace pgw::types {
     using Rate = int64_t;           // Тип для количества сессий на удаление
     using FilePath = std::string;
     using LogLevel = std::string;
+    using Imsi = std::string;
 
     using ConstIp = std::string_view;
     using ConstFilePath = std::string_view;

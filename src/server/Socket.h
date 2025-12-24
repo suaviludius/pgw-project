@@ -25,6 +25,7 @@ public:
     Packet recieve();
     void close();
 
+    int getFd() const {return m_fd;}
     std::string addrToString(const sockaddr_in& addr); // Из sockaddr_in делает string c ip:port
 };
 

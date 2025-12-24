@@ -116,4 +116,6 @@ TEST_F(SessionManagerTest, GracefulShutdownSucsess) {
     EXPECT_EQ(manager.getSessionCount(), 4);
     manager.gracefulShutdown(3);
     EXPECT_EQ(manager.getSessionCount(), 1);
+    manager.gracefulShutdown(3); // Случай сессий на удаление > актуальных сессий
+    EXPECT_EQ(manager.getSessionCount(), 0);
 }
