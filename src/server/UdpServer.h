@@ -15,13 +15,9 @@ private:
 
     // Композиция
     Socket m_socket;
-    pgw::types::ConstIp m_ip;
-    pgw::types::Port m_port;
-
     bool m_running;
 
     void run();
-
     bool validateImsi(const std::string& imsi);
 public:
     UdpServer(SessionManager& sessionManager,
