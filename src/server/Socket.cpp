@@ -12,13 +12,16 @@ Socket::Socket(){
     // Создаем дискриптор для сокета IPv4 + UDP
     m_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (m_fd < 0) {
-        throw std::system_error(errno, std::system_category(), "Socket create failed (socket()): ");
+        throw std::runtime_error("Socket creation failed: " + std::string(strerror(errno)));
     }
     // Включаем повторное использование порта
     int reuse = 1;
     if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-        throw std::system_error(errno, std::system_category(), "Socket create failed (setsockopt() for reusing port): ");
+        ::close(m_fd);
+        throw std::runtime_error("Socket creation failed (reuse): " + std::string(strerror(errno)));
     }
+    // Не используем таймаут на прием, чтобы не тратить время программы впустую
+    // Не используем блокирующий соккет, чтобы не блокировать программу на одном соккете
     Logger::debug("Socket created");
 }
 
@@ -42,16 +45,15 @@ void Socket::bind(pgw::types::ConstIp ip, pgw::types::Port port){
 
     // Заносим IP в структуру адреса
     if (::inet_pton(AF_INET, std::string(ip).c_str(), &addr.sin_addr) != 1) {
-        throw std::runtime_error("Invalid IP address: " + std::string(ip));
+        throw std::runtime_error("Socket bind failed to ip address " + std::string(ip));
     }
 
     // Связываем сокет с адресом сокета
     if (::bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
-        throw std::system_error(errno, std::system_category(), "Failed to bind socket to " + std::string(ip) + ":" + std::to_string(port));
+        throw std::runtime_error("Socket bind failed: " + std::string(strerror(errno)));
     }
 
     Logger::info("Socket bind " + addrToString(addr));
-    //m_socket = reinterpret_cast<struct sockaddr* > (&addr); // Для работ с функциями
 }
 
 Socket::Packet Socket::recieve(){
@@ -76,7 +78,7 @@ bool Socket::send(std::string_view data, const sockaddr_in& addr){
     ssize_t bytesSent = ::sendto(m_fd, data.data(), data.size(), 0,
                                  reinterpret_cast<const sockaddr*>(&addr), sizeof(addr));
     if(bytesSent < 0){
-        throw std::system_error(errno, std::system_category(), "Failed to sent data");
+        throw std::system_error(errno, std::system_category(), "Socket failed to sent data");
     }
 
     Logger::trace("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));
