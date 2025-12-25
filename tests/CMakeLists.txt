@@ -12,6 +12,11 @@ add_executable(
     test_session_manager.cpp
 )
 
+add_executable(
+    test_udp_server
+    test_udp_server.cpp
+)
+
 # Добавляем файлы, которые будем тестировать
 target_sources(
     test_config PRIVATE
@@ -25,6 +30,10 @@ target_sources(
     test_session_manager PRIVATE
     ${CMAKE_SOURCE_DIR}/src/server/SessionManager.cpp
 )
+target_sources(
+    test_udp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/server/UdpServer.cpp
+)
 
 # Подключаем заголовочные файлы
 target_include_directories(
@@ -37,12 +46,20 @@ target_include_directories(
 )
 target_include_directories(
     test_session_manager PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces # Важно указать перед server
     ${CMAKE_SOURCE_DIR}/tests/mocks # Важно указать перед common, где лежит настоящий Logger
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/server
 )
+target_include_directories(
+    test_udp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces # Важно указать перед server
+    ${CMAKE_SOURCE_DIR}/tests/mocks # Важно указать перед common
+    ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src/server
+)
 
-
+# Зависимости загруженны в главном CMakeList
 target_link_libraries(
     test_config PRIVATE
     GTest::gtest
@@ -57,6 +74,12 @@ target_link_libraries(
 )
 target_link_libraries(
     test_session_manager PRIVATE
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+)
+target_link_libraries(
+    test_udp_server PRIVATE
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     GTest::gmock        # Для mock
