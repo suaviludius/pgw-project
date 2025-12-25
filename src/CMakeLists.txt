@@ -10,6 +10,7 @@ target_sources(
 target_include_directories(
     pgw_server PRIVATE
     common
+    server/interfaces
     server
 )
 
