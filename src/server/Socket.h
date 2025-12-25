@@ -1,32 +1,24 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include "types.h"
+#include "ISocket.h"
 
-// Для Unix систем
-#include <netinet/in.h> // структуры сокетов
-
-class Socket {
-public:
-    static constexpr uint16_t MAX_BYTES_RECIEVE {1024};
+class Socket : public ISocket {
 private:
+    static constexpr uint16_t MAX_BYTES_RECIEVE {1024};
     int m_fd; // file diskriptor
+
 public:
     Socket();
-    ~Socket();
+    ~Socket() override;
 
-    struct Packet{
-        std::string data;       // Тут будет лежать imsi
-        sockaddr_in senderAddr; // Этот адрес используем для send() внутри сервера
-    };
+    void bind(pgw::types::ConstIp ip, pgw::types::Port port) override;
+    bool send(std::string_view data, const sockaddr_in& addres) override;
+    Packet receive() override;
+    void close() override;
 
-    void bind(pgw::types::ConstIp ip, pgw::types::Port port);
-    bool send(std::string_view data, const sockaddr_in& addres);
-    Packet recieve();
-    void close();
-
-    int getFd() const {return m_fd;}
-    std::string addrToString(const sockaddr_in& addr); // Из sockaddr_in делает string c ip:port
+    int getFd() const override {return m_fd;}
+    std::string addrToString(const sockaddr_in& addr) override; // Из sockaddr_in делает string c ip:port
 };
 
 #endif // SOCKET_H

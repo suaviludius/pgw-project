@@ -1,34 +1,41 @@
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
-#include "SessionManager.h"
-#include "CdrWriter.h"
-#include "Socket.h"
+#include "ISessionManager.h"
+#include "ICdrWriter.h"
+#include "ISocket.h"
+
+#include <memory> // unique_ptr
 
 class UdpServer{
-public:
-    static constexpr uint32_t MAX_DATAGRAM_SIZE {1500};
 private:
+    static constexpr uint32_t MAX_DATAGRAM_SIZE {1500};
     // Ассоциация
-    SessionManager& m_sessionManager;
-    CdrWriter& m_cdrWriter;
-
+    ISessionManager& m_sessionManager;
+    ICdrWriter& m_cdrWriter;
     // Композиция
-    Socket m_socket;
+    std::unique_ptr<ISocket> m_socket;
+    pgw::types::Ip m_ip;
+    pgw::types::Port m_port;
     bool m_running;
 
-    void run();
-    bool validateImsi(const std::string& imsi);
 public:
-    UdpServer(SessionManager& sessionManager,
-              CdrWriter& m_cdrWriter,
-              pgw::types::ConstIp ip,
-              pgw::types::Port port);
+    // Передаем соккет в конструктор, чтобы тестировать и много не думать
+    explicit UdpServer(
+        ISessionManager& sessionManager,
+        ICdrWriter& m_cdrWriter,
+        std::unique_ptr<ISocket> socket,
+        pgw::types::ConstIp ip,
+        pgw::types::Port port
+    );
     ~UdpServer();
 
     void start();
     void stop();
+    void run();
+
     bool isRunning() const {return m_running;}
+    bool validateImsi(const std::string& imsi);
 };
 
 

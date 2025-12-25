@@ -1,4 +1,5 @@
 #include "mocks/logger.h"
+
 #include "SessionManager.h"
 
 #include <gtest/gtest.h>

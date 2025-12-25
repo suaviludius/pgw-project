@@ -1,0 +1,26 @@
+#ifndef I_SOCKET_H
+#define I_SOCKET_H
+
+#include "types.h"
+
+#include <netinet/in.h> // Структуры сокетов для Unix систем
+
+class ISocket {
+public:
+    struct Packet{
+        std::string data; // Тут будет лежать imsi
+        sockaddr_in senderAddr; // Этот адрес используем для send() внутри сервера
+    };
+
+    virtual ~ISocket() = default;
+
+    virtual void bind(pgw::types::ConstIp ip, pgw::types::Port port) = 0;
+    virtual bool send(std::string_view data, const sockaddr_in& addres) = 0;
+    virtual Packet receive() = 0;
+    virtual void close() = 0;
+
+    virtual int getFd() const = 0;
+    virtual std::string addrToString(const sockaddr_in& addr) = 0; // Из sockaddr_in делает string c ip:port
+};
+
+#endif // I_SOCKET_H

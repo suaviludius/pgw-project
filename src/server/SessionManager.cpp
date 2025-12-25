@@ -1,7 +1,7 @@
 #include "SessionManager.h"
 #include "logger.h"
 
-#include <thread>
+#include <thread> // Для задержки в graceful shutdown
 #include <algorithm>
 
 SessionManager::SessionManager(
