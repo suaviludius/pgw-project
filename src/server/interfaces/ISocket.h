@@ -15,7 +15,7 @@ public:
     virtual ~ISocket() = default;
 
     virtual void bind(pgw::types::ConstIp ip, pgw::types::Port port) = 0;
-    virtual bool send(std::string_view data, const sockaddr_in& addres) = 0;
+    virtual void send(std::string_view data, const sockaddr_in& addres) = 0;
     virtual Packet receive() = 0;
     virtual void close() = 0;
 

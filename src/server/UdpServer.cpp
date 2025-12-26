@@ -56,7 +56,7 @@ void UdpServer::run(){
             std::string answer {"rejected"};
             std::string imsi = packet.data;
             // Валидация
-            if (validateImsi(imsi)) {
+            if (!validateImsi(imsi)) {
                 m_socket->send(answer, packet.senderAddr);
                 return;
             }
