@@ -56,14 +56,14 @@ void Socket::bind(pgw::types::ConstIp ip, pgw::types::Port port){
     Logger::info("Socket bind " + addrToString(addr));
 }
 
-Socket::Packet Socket::recieve(){
+Socket::Packet Socket::receive(){
     std::vector<char> buffer(MAX_BYTES_RECIEVE); // Буффер для приема входных байт
     sockaddr_in addr{}; // Адрес отправителя
     socklen_t addrLen { sizeof(sockaddr_in) }; // Сохраняем размер адреса под особым типом, для работы библиотечных методов
     ssize_t bytesReceived = ::recvfrom(m_fd, buffer.data(), buffer.size(), 0,
                                       reinterpret_cast<sockaddr*>(&addr), &addrLen);
     if(bytesReceived < 0){
-        throw std::system_error(errno, std::system_category(), "Socket failed received bytes");
+        throw std::runtime_error("Socket failed received bytes: " + std::string(strerror(errno)));
     }
 
     buffer.resize(bytesReceived); // Изменяем размер вектора до фактического количества принятых байт
@@ -74,11 +74,11 @@ Socket::Packet Socket::recieve(){
     return Packet{std::move(data), addr};
 }
 
-bool Socket::send(std::string_view data, const sockaddr_in& addr){
+void Socket::send(std::string_view data, const sockaddr_in& addr){
     ssize_t bytesSent = ::sendto(m_fd, data.data(), data.size(), 0,
                                  reinterpret_cast<const sockaddr*>(&addr), sizeof(addr));
     if(bytesSent < 0){
-        throw std::system_error(errno, std::system_category(), "Socket failed to sent data");
+        throw std::runtime_error("Socket failed to sent data: " + std::string(strerror(errno)));
     }
 
     Logger::trace("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));

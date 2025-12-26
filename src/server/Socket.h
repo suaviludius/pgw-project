@@ -13,7 +13,7 @@ public:
     ~Socket() override;
 
     void bind(pgw::types::ConstIp ip, pgw::types::Port port) override;
-    bool send(std::string_view data, const sockaddr_in& addres) override;
+    void send(std::string_view data, const sockaddr_in& addres) override;
     Packet receive() override;
     void close() override;
 
