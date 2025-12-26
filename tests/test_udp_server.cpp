@@ -5,6 +5,8 @@
 
 #include "UdpServer.h"
 
+//#include <arpa/inet.h> // структуры сокетов
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -13,9 +15,11 @@ struct UdpServerTest : public testing::Test {
     std::unique_ptr<MockSessionManager> mockSessionManager;
     std::unique_ptr<MockCdrWriter> mockCdrWriter;
     std::unique_ptr<MockSocket> mockSocket;
-    const pgw::types::Ip IP {"127.0.0.1"};
-    const pgw::types::Port PORT {8080};
-    const sockaddr_in ADDR {AF_INET, htons(12345), htonl(INADDR_ANY)};
+    const pgw::types::Ip IP {"0.0.0.0"};
+    const pgw::types::Port PORT {1};
+    const pgw::types::Imsi IMSI1 {"012340123401234"};
+    const pgw::types::Imsi IMSI2 {"000111222333444"};
+    const sockaddr_in ADDR {AF_INET, htons(8080), htonl(INADDR_ANY)};
 
     // Метод, вызываемый перед всеми тестами
     static void SetUpTestSuit(){}
@@ -34,19 +38,124 @@ struct UdpServerTest : public testing::Test {
 };
 
 
-TEST_F(UdpServerTest, CreateUdpServer){
-    // Ожидаем, что bind будет вызван с правильными параметрами
+TEST_F(UdpServerTest, StartUdpServer){
+    // Arrange
+    // Ожидаем, что bind будет вызван с правильными параметрами и ровно 1 раз
     EXPECT_CALL(*mockSocket, bind(IP, PORT)).Times(1);
-
     // Создаем сервер через конструктор с сокетом
-    UdpServer server(
-        *mockSessionManager,
-        *mockCdrWriter,
-        std::move(mockSocket),
-        IP,
-        PORT
-    );
+    EXPECT_NO_THROW({
+        UdpServer server(*mockSessionManager,*mockCdrWriter, std::move(mockSocket),IP,PORT);
+        // Act
+        server.start();
+        // Assert
+        EXPECT_TRUE(server.isRunning());
+        // Act
+        server.stop();
+        // Assert
+        EXPECT_FALSE(server.isRunning());
+    });
+}
 
+TEST_F(UdpServerTest, ValidateImsi) {
+    UdpServer server(*mockSessionManager, *mockCdrWriter, std::move(mockSocket), IP, PORT);
+
+    // Корректные IMSI
+    EXPECT_TRUE(server.validateImsi(IMSI1));
+    EXPECT_TRUE(server.validateImsi(IMSI2));
+
+    // Некорректные IMSI
+    EXPECT_FALSE(server.validateImsi(""));                    // Пустая строка
+    EXPECT_FALSE(server.validateImsi("123"));                 // Слишком короткий
+    EXPECT_FALSE(server.validateImsi("1234567890123456"));    // Слишком длинный
+    EXPECT_FALSE(server.validateImsi("1234567890abcde"));     // Буквы вместо цифр
+    EXPECT_FALSE(server.validateImsi("12345-789012345"));     // Символ дефиса
+    EXPECT_FALSE(server.validateImsi("12345678901234 "));     // Пробел в конце
+    EXPECT_FALSE(server.validateImsi(" 123456789012345"));    // Пробел в начале
+}
+
+// Перегружаем оператор сравнения чтобы GTest мог сравнивать структуры сокетов
+bool operator==(const sockaddr_in& lhs, const sockaddr_in& rhs) {
+    return lhs.sin_family == rhs.sin_family &&
+           lhs.sin_port == rhs.sin_port &&
+           lhs.sin_addr.s_addr == rhs.sin_addr.s_addr;
+}
+
+TEST_F(UdpServerTest, RunWithValidImsi){
+    // Arrange
+    ISocket::Packet testPacket {IMSI1, ADDR};
+    EXPECT_CALL(*mockSocket, bind(IP, PORT)).Times(1);
+    EXPECT_CALL(*mockSocket, receive()).WillOnce(testing::Return(testPacket)); // При вызове receive() вернём testPacket
+    EXPECT_CALL(*mockSessionManager, createSession(IMSI1)).WillOnce(testing::Return(ISessionManager::CreateResult::CREATED));
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, "created")).Times(1);
+    EXPECT_CALL(*mockSocket, send("created", ADDR)).Times(1); // Ожидаем вызов send() с параметрами created и ADDR
+    // Создаем сервер
+    UdpServer server(*mockSessionManager,*mockCdrWriter, std::move(mockSocket),IP,PORT);
+    // Act
     server.start();
+    server.run();
+    // Assert
     EXPECT_TRUE(server.isRunning());
+}
+
+TEST_F(UdpServerTest, RunWithInvalidImsi) {
+    // Arrange
+    ISocket::Packet testPacket {"8-800-555-35-35", ADDR};
+    EXPECT_CALL(*mockSocket, bind(IP, PORT)).Times(1);
+    EXPECT_CALL(*mockSocket, receive()).WillOnce(testing::Return(testPacket)); // При вызове receive() вернём testPacket
+    EXPECT_CALL(*mockSocket, send("rejected", ADDR)).Times(1); // Ожидаем вызов send() с параметрами rejected и ADDR
+    EXPECT_CALL(*mockSessionManager, createSession(IMSI1)).Times(0);
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, "created")).Times(0);
+    // Создаем сервер
+    UdpServer server(*mockSessionManager,*mockCdrWriter, std::move(mockSocket),IP,PORT);
+    // Act
+    server.start();
+    server.run();
+    // Assert
+    EXPECT_TRUE(server.isRunning());
+}
+
+TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
+    // Arrange
+    ISocket::Packet testPacket {IMSI1, ADDR};
+    EXPECT_CALL(*mockSocket, bind(IP, PORT)).Times(1);
+    EXPECT_CALL(*mockSocket, receive()).WillOnce(testing::Return(testPacket)); // При вызове receive() вернём testPacket
+    EXPECT_CALL(*mockSessionManager, createSession(IMSI1)).WillOnce(testing::Return(ISessionManager::CreateResult::REJECTED_BLACKLIST));
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, "rejected")).Times(1);
+    EXPECT_CALL(*mockSocket, send("rejected", ADDR)).Times(1); // Ожидаем вызов send() с параметрами rejected и ADDR
+    // Создаем сервер
+    UdpServer server(*mockSessionManager,*mockCdrWriter, std::move(mockSocket),IP,PORT);
+    // Act
+    server.start();
+    server.run();
+    // Assert
+    EXPECT_TRUE(server.isRunning());
+}
+
+TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
+    // Arrange
+    ISocket::Packet testPacket {IMSI1, ADDR};
+    EXPECT_CALL(*mockSocket, bind(IP, PORT)).Times(1);
+    EXPECT_CALL(*mockSocket, receive()).WillOnce(testing::Return(testPacket)); // При вызове receive() вернём testPacket
+    EXPECT_CALL(*mockSessionManager, createSession(IMSI1)).WillOnce(testing::Return(ISessionManager::CreateResult::ALREADY_EXISTS));
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, "created")).Times(0);
+    EXPECT_CALL(*mockSocket, send("rejected", ADDR)).Times(1); // Ожидаем вызов send() с параметрами rejected и ADDR
+    // Создаем сервер
+    UdpServer server(*mockSessionManager,*mockCdrWriter, std::move(mockSocket),IP,PORT);
+    // Act
+    server.start();
+    server.run();
+    // Assert
+    EXPECT_TRUE(server.isRunning());
+}
+
+TEST_F(UdpServerTest, RunWithoutThrows) {
+    // Arrange
+    EXPECT_CALL(*mockSocket, bind("127.0.0.1", 8080)).Times(1);
+    EXPECT_CALL(*mockSocket, receive()).WillOnce(testing::Throw(std::runtime_error("Network error")));
+    // Создаем сервер
+    UdpServer server(*mockSessionManager, *mockCdrWriter, std::move(mockSocket), "127.0.0.1", 8080);
+    // Act
+    server.start();
+    // Assert
+    EXPECT_NO_THROW(server.run()); // Не должно падать при исключении
 }
