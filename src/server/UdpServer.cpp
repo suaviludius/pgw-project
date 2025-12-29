@@ -51,28 +51,32 @@ void UdpServer::stop(){
 void UdpServer::run(){
     if(!m_running) return;
     try{
-        auto packet = m_socket->receive();
-        if(!packet.data.empty()){
-            std::string answer {"rejected"};
-            std::string imsi = packet.data;
-            // Валидация
-            if (!validateImsi(imsi)) {
-                m_socket->send(answer, packet.senderAddr);
-                return;
-            }
-
-            switch (m_sessionManager.createSession(imsi)) {
-                case ISessionManager::CreateResult::CREATED:
-                    answer = "created";
-                    m_cdrWriter.writeAction(imsi, answer);
+        // Читаем все пакеты
+        while(true){
+            auto packet = m_socket->receive();
+            if(!packet.data.empty()){
+                std::string answer {"rejected"};
+                std::string imsi = packet.data;
+                // Валидация
+                if (!validateImsi(imsi)) {
+                    m_socket->send(answer, packet.senderAddr);
                     break;
-                case ISessionManager::CreateResult::REJECTED_BLACKLIST:
-                    m_cdrWriter.writeAction(imsi, answer);
-                case ISessionManager::CreateResult::ALREADY_EXISTS:
-                case ISessionManager::CreateResult::ERROR:
-                default: break;
+                }
+
+                switch (m_sessionManager.createSession(imsi)) {
+                    case ISessionManager::CreateResult::CREATED:
+                        answer = "created";
+                        m_cdrWriter.writeAction(imsi, answer);
+                        break;
+                    case ISessionManager::CreateResult::REJECTED_BLACKLIST:
+                        m_cdrWriter.writeAction(imsi, answer);
+                        break;
+                    case ISessionManager::CreateResult::ALREADY_EXISTS:
+                    case ISessionManager::CreateResult::ERROR:
+                    default: break;
+                }
+                m_socket->send(answer, packet.senderAddr);
             }
-            m_socket->send(answer, packet.senderAddr);
         }
     }
     catch(const std::exception& e){

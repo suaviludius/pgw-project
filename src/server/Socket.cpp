@@ -4,6 +4,7 @@
 #include <arpa/inet.h> // inet_pton / htons / ntohs
 #include <unistd.h>    // close
 #include <string.h>    // memset
+#include <fcntl.h>     // fcntl
 
 #include <system_error>
 #include <vector>
@@ -20,8 +21,17 @@ Socket::Socket(){
         ::close(m_fd);
         throw std::runtime_error("Socket creation failed (reuse): " + std::string(strerror(errno)));
     }
+    // Устанавливаем неблокирующий режим (poll() нужен non-blocking socket)
+    int flags = fcntl(m_fd, F_GETFL, 0);
+    if(flags < 0){
+        ::close(m_fd);
+        throw std::runtime_error("Socket creation failed (get flags): " + std::string(strerror(errno)));
+    }
+    if(fcntl(m_fd, F_SETFL, flags | O_NONBLOCK) < 0){
+        ::close(m_fd);
+        throw std::runtime_error("Socket creation failed (non-blocking): " + std::string(strerror(errno)));
+    }
     // Не используем таймаут на прием, чтобы не тратить время программы впустую
-    // Не используем блокирующий соккет, чтобы не блокировать программу на одном соккете
     Logger::debug("Socket created");
 }
 

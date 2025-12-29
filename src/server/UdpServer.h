@@ -35,6 +35,7 @@ public:
     void run();
 
     bool isRunning() const {return m_running;}
+    int getFd() const {return m_socket->getFd();}; // Файловый дискриптор для poll
     bool validateImsi(const std::string& imsi);
 };
 
