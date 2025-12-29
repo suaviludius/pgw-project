@@ -85,15 +85,24 @@ void SessionManager::cleanTimeoutSessions(){
     }
 }
 
-void SessionManager::gracefulShutdown(pgw::types::Rate rate){
+void SessionManager::gracefulShutdown(){
     Logger::info("Sessions graceful shutdown start");
+    // Рассчитываем интервал между удалениями сессий
+    // Например, rate = 10 сессий/сек -> интервал = 1000ms / 10 = 100ms на сессию
+    const auto delayBetweenSessions = std::chrono::milliseconds(1000 / m_shutdownRate);
+
     auto it {m_sessions.begin()};
-    while ((it != m_sessions.end()) && (rate-- > 0)) {
+    auto lastDeletionTime = std::chrono::steady_clock::now();
+    while (it != m_sessions.end()) {
         auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
         // Задержка для контроля скорости
-        while ((*it)->getAge() < m_sessionTimeoutSec) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(m_sessionTimeoutSec));
+        auto now = std::chrono::steady_clock::now();
+        auto timeSinceLastDeletion = now - lastDeletionTime;
+        if (timeSinceLastDeletion < delayBetweenSessions) {
+            auto calculatedDelay = delayBetweenSessions - timeSinceLastDeletion;
+            std::this_thread::sleep_for(calculatedDelay);
         }
+        // Удаляем сессию
         it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
         Logger::session_deleted(imsi);
     }

@@ -12,7 +12,7 @@ public:
 private:
     pgw::types::Blacklist m_blacklist;
     pgw::types::Seconds m_sessionTimeoutSec;
-    pgw::types::Rate m_shutdownRate;
+    pgw::types::Rate m_shutdownRate; // Сессий/секунду для удаления
     sessions m_sessions; // RAII, поэтому используем умные указатели
 
     sessions::iterator findSession(pgw::types::ConstImsi imsi); // Для внутренних методов auto можно использовать
@@ -27,7 +27,7 @@ public:
 
     CreateResult createSession(pgw::types::ConstImsi imsi) override;
     void removeSession(pgw::types::ConstImsi imsi);
-    void gracefulShutdown(pgw::types::Rate rate);
+    void gracefulShutdown();
     void cleanTimeoutSessions();
 
     bool hasSession(pgw::types::ConstImsi imsi) const override {return (findSession(imsi) != m_sessions.end());}
