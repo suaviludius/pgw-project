@@ -86,6 +86,9 @@ void SessionManager::cleanTimeoutSessions(){
 }
 
 void SessionManager::gracefulShutdown(){
+    if (!m_shutdownRequest) {
+        return;  // Shutdown не запрошен
+    }
     Logger::info("Sessions graceful shutdown start");
     // Рассчитываем интервал между удалениями сессий
     // Например, rate = 10 сессий/сек -> интервал = 1000ms / 10 = 100ms на сессию
@@ -106,5 +109,11 @@ void SessionManager::gracefulShutdown(){
         it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
         Logger::session_deleted(imsi);
     }
-    Logger::info("Sessions graceful shutdown completed");
+    if (m_sessions.empty()) {
+        m_shutdownRequest = false;  // Сбрасываем флаг
+        Logger::info("Sessions graceful shutdown completed");
+    }
+    else {
+        Logger::info("Sessions graceful shutdown error");
+    }
 }

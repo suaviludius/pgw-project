@@ -7,16 +7,21 @@
 
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      ICdrWriter& cdrWriter,
-                     std::unique_ptr<ISocket> socket,
                      pgw::types::ConstIp ip,
                      pgw::types::Port port)
-    : m_sessionManager{sessionManager},
+try : m_sessionManager{sessionManager},
       m_cdrWriter{cdrWriter},
-      m_socket{std::move(socket)},
+      //m_socket{std::make_unique<MockSocket>()},   // Для тестов
+      m_socket{std::make_unique<Socket>()},     // Для релиза
       m_ip{ip},
       m_port{port},
       m_running{false}{
     Logger::info("UDP server initialized");
+}
+catch(const std::exception& e){
+    Logger::error("UDP server initialization  filed: " + std::string(e.what()));
+    // Пробрасываем исключение дальше
+    throw std::runtime_error("UDP server initialization failed");
 }
 
 UdpServer::~UdpServer(){
@@ -35,7 +40,7 @@ void UdpServer::start(){
     catch (const std::exception& e){
         Logger::error("UDP server start failed " + std::string(m_ip) + ":" + std::to_string(m_port) + " - " + std::string(e.what()));
         // Пробрасываем с дополнительным контекстом
-        std::throw_with_nested(std::runtime_error("UDP server start failed"));
+        throw std::runtime_error("UDP server start failed");
     }
     Logger::info("UDP server sucseccdully start");
     // run();
@@ -48,21 +53,17 @@ void UdpServer::stop(){
 }
 
 // Метод раcсчитан на использование с менеджером poll, epoll, select
-void UdpServer::run(){
+void UdpServer::handler(){
     if(!m_running) return;
     try{
-        // Читаем все пакеты
+        // Читаем все доступные пакеты
         while(true){
             auto packet = m_socket->receive();
-            if(!packet.data.empty()){
-                std::string answer {"rejected"};
-                std::string imsi = packet.data;
-                // Валидация
-                if (!validateImsi(imsi)) {
-                    m_socket->send(answer, packet.senderAddr);
-                    break;
-                }
-
+            if(packet.data.empty()) break;
+            std::string answer {"rejected"};
+            std::string imsi = packet.data;
+            // Валидация
+            if (validateImsi(imsi)) {
                 switch (m_sessionManager.createSession(imsi)) {
                     case ISessionManager::CreateResult::CREATED:
                         answer = "created";
@@ -75,7 +76,6 @@ void UdpServer::run(){
                     case ISessionManager::CreateResult::ERROR:
                     default: break;
                 }
-                m_socket->send(answer, packet.senderAddr);
             }
         }
     }

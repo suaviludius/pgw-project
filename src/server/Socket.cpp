@@ -21,7 +21,7 @@ Socket::Socket(){
         ::close(m_fd);
         throw std::runtime_error("Socket creation failed (reuse): " + std::string(strerror(errno)));
     }
-    // Устанавливаем неблокирующий режим (poll() нужен non-blocking socket)
+    // Устанавливаем неблокирующий режим чтобы не зависать receive (плюс poll() нужен non-blocking socket)
     int flags = fcntl(m_fd, F_GETFL, 0);
     if(flags < 0){
         ::close(m_fd);
