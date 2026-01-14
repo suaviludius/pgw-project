@@ -77,7 +77,6 @@ void UdpServer::handler(){
                     default: break;
                 }
             }
-            m_socket->send(answer, packet.senderAddr);
         }
     }
     catch(const std::exception& e){
