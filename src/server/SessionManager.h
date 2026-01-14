@@ -15,6 +15,8 @@ private:
     pgw::types::Rate m_shutdownRate; // Сессий/секунду для удаления
     sessions m_sessions; // RAII, поэтому используем умные указатели
 
+    std::atomic<bool> m_shutdownRequest{false}; // Запрос на очищение менеджера сессий (принимается из любых потоков)
+
     sessions::iterator findSession(pgw::types::ConstImsi imsi); // Для внутренних методов auto можно использовать
     sessions::const_iterator findSession(pgw::types::ConstImsi imsi) const; // версия для константных методов
 public:
@@ -32,6 +34,7 @@ public:
 
     bool hasSession(pgw::types::ConstImsi imsi) const override {return (findSession(imsi) != m_sessions.end());}
     size_t getSessionCount() const override {return m_sessions.size();}
+    void requestGracefulShutdown() override {m_shutdownRequest = true; }
 };
 
 #endif // SESSION_MANAGER_H
