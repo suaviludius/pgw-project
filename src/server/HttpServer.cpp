@@ -2,7 +2,6 @@
 #include "logger.h"
 
 HttpServer::HttpServer(ISessionManager& sessionManager,
-                     ICdrWriter& cdrWriter,
                      pgw::types::Port port)
     : m_sessionManager{sessionManager},
       m_port{port},
@@ -22,37 +21,39 @@ void HttpServer::start(){
         return;
     }
     try{
-        m_server->bind_to_port(HOST, m_port);
-        // Проверяем, что сервер запустился
-        if (!m_server->is_valid()) {
-            throw std::runtime_error("HTTP server invalid binding to port " + std::to_string(m_port));
-        }
         m_running = true;
+        // Запускаем сервер в отдельном потоке
+        m_serverThread = std::thread([this]() {
+            try {
+                Logger::info("HTTP server listening on port " +  std::to_string(m_port));
+                // Эта функция БЛОКИРУЕТ поток
+                m_server->listen(HOST, m_port);
+            } catch (const std::exception& e) { // Все исключения должны обрабатываться внутри потока, иначе terminate
+                if (m_running) {  // Логируем только если не остановлен
+                    Logger::error("HTTP server error: " +  std::string(e.what()));
+                }
+            }
+        });
     }
     catch (const std::exception& e){
+        m_running = false;
         Logger::error("HTTP server start failed: " + std::to_string(m_port) + " - " + std::string(e.what()));
         // Пробрасываем с дополнительным контекстом
         std::throw_with_nested(std::runtime_error("HTTP server start failed"));
     }
     Logger::info("HTTP server sucseccdully start");
-    // run();
 }
 
 void HttpServer::stop(){
     if(!m_running) return;
-    m_server->stop();
     m_running = false;
-    Logger::info("HTTP server stopped");
-}
+    m_server->stop();
 
-void HttpServer::run(){
-    if(!m_running) return;
-    try{
-        m_server->listen_after_bind();
+    if (m_serverThread.joinable()) {
+        m_serverThread.join();
     }
-    catch(const std::exception& e){
-        Logger::error("UDP server runninig error: " + std::string(e.what()));
-    }
+
+    Logger::info("HTTP server stopped");
 }
 
 void HttpServer::setRoutes() {
@@ -91,7 +92,8 @@ void HttpServer::handleCheckSubscriber(const httplib::Request& req, httplib::Res
 
 void HttpServer::handleStop(const httplib::Request& req, httplib::Response& res){
     Logger::info("HTTP server request: graceful shutdown");
-    // m_sessionManager.gracefulShutdown(); // -- Нужно задать через атомик флаг или шаред мемори в главный поток программы
+    // Передаем запрос менеджеру сессий на удаление сессий
+    m_sessionManager.requestGracefulShutdown();
     res.set_content("Graceful shutdown flag set", "text/plain");
     // Можно в цикле ожидать выставление флага внутри sessionManager,
     // который скажет о сбросе, определенное время, если он не появится

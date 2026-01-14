@@ -10,7 +10,7 @@
 
 class HttpServer{
 private:
-    static inline const std::string HOST {"0.0.0.0"};
+    static constexpr const char* HOST {"0.0.0.0"};
     // Ассоциация
     ISessionManager& m_sessionManager;
     // Композиция
@@ -18,18 +18,19 @@ private:
     pgw::types::Port m_port;
     bool m_running;
 
+    // Поток работы http сервера
+    std::thread m_serverThread;
+
 public:
     // Передаем соккет в конструктор, чтобы тестировать и много не думать
     explicit HttpServer(
         ISessionManager& sessionManager,
-        ICdrWriter& m_cdrWriter,
         pgw::types::Port port
     );
     ~HttpServer();
 
-    void start();
+    void start(); // Создает отдельный поток для работы сервера
     void stop();
-    void run();
 
     bool isRunning() const {return m_running;}
 
