@@ -5,7 +5,7 @@
 #include "ICdrWriter.h"
 #include "ISocket.h"
 
-#include <memory> // unique_ptr
+//#include <memory> // unique_ptr
 
 class UdpServer{
 private:
@@ -24,7 +24,6 @@ public:
     explicit UdpServer(
         ISessionManager& sessionManager,
         ICdrWriter& m_cdrWriter,
-        std::unique_ptr<ISocket> socket,
         pgw::types::ConstIp ip,
         pgw::types::Port port
     );
@@ -32,7 +31,7 @@ public:
 
     void start();
     void stop();
-    void run();
+    void handler();
 
     bool isRunning() const {return m_running;}
     int getFd() const {return m_socket->getFd();}; // Файловый дискриптор для poll
