@@ -1,17 +1,23 @@
-add_executable(pgw_server server/main.cpp)
+add_executable(pgw_server
+    server/main.cpp
+)
 
 target_sources(
     pgw_server PRIVATE
     common/config.cpp
     common/logger.cpp
+    server/HttpServer.cpp
+    server/Socket.cpp
+    server/CdrWriter.cpp
     server/SessionManager.cpp
+    server/UdpServer.cpp
 )
 
 target_include_directories(
     pgw_server PRIVATE
-    common
-    server/interfaces
-    server
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/server/interfaces
+    ${CMAKE_CURRENT_SOURCE_DIR}/server
 )
 
 target_link_libraries(
