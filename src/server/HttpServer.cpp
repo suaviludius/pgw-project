@@ -8,7 +8,7 @@ HttpServer::HttpServer(ISessionManager& sessionManager,
       m_server{std::make_unique<httplib::Server>()},
       m_running{false}{
     setRoutes(); // Настраиваем серверные запросы до bind() сервера
-    Logger::info("UDP server initialized");
+    LOG_INFO("UDP server initialized");
 }
 
 HttpServer::~HttpServer(){
@@ -17,7 +17,7 @@ HttpServer::~HttpServer(){
 
 void HttpServer::start(){
     if(m_running) {
-        Logger::warn("HTTP server already running");
+        LOG_WARN("HTTP server already running");
         return;
     }
     try{
@@ -25,23 +25,23 @@ void HttpServer::start(){
         // Запускаем сервер в отдельном потоке
         m_serverThread = std::thread([this]() {
             try {
-                Logger::info("HTTP server listening on port " +  std::to_string(m_port));
+                LOG_INFO("HTTP server listening on port {}", m_port);
                 // Эта функция БЛОКИРУЕТ поток
                 m_server->listen(HOST, m_port);
             } catch (const std::exception& e) { // Все исключения должны обрабатываться внутри потока, иначе terminate
                 if (m_running) {  // Логируем только если не остановлен
-                    Logger::error("HTTP server error: " +  std::string(e.what()));
+                    LOG_ERROR("HTTP server error: {}", e.what());
                 }
             }
         });
     }
     catch (const std::exception& e){
         m_running = false;
-        Logger::error("HTTP server start failed: " + std::to_string(m_port) + " - " + std::string(e.what()));
+        LOG_ERROR("HTTP server start failed: {} - {}", m_port, e.what());
         // Пробрасываем с дополнительным контекстом
         std::throw_with_nested(std::runtime_error("HTTP server start failed"));
     }
-    Logger::info("HTTP server sucseccdully start");
+    LOG_INFO("HTTP server sucseccdully start");
 }
 
 void HttpServer::stop(){
@@ -53,7 +53,7 @@ void HttpServer::stop(){
         m_serverThread.join();
     }
 
-    Logger::info("HTTP server stopped");
+    LOG_INFO("HTTP server stopped");
 }
 
 void HttpServer::setRoutes() {
@@ -80,24 +80,24 @@ void HttpServer::handleCheckSubscriber(const httplib::Request& req, httplib::Res
     if(imsi.empty()){
         res.set_content("Request error: no imsi", "text/plan");
         res.status = 400; // Bad request
-        Logger::warn("HTTP server check subscriber request: missing imsi parameter");
+        LOG_WARN("HTTP server check subscriber request: missing imsi parameter");
         return;
     }
-    Logger::info("HTTP server request: check subscriber with imsi: " + imsi);
+    LOG_INFO("HTTP server request: check subscriber with imsi: " + imsi);
     std::string status = m_sessionManager.hasSession(imsi) ? "active" : "not active";
     res.set_content(status, "text/plan");
     res.status = 200; // OK
-    Logger::info("HTTP server response: subscriber status is " + status);
+    LOG_INFO("HTTP server response: subscriber status is " + status);
 }
 
 void HttpServer::handleStop(const httplib::Request& req, httplib::Response& res){
-    Logger::info("HTTP server request: graceful shutdown");
+    LOG_INFO("HTTP server request: graceful shutdown");
     // Передаем запрос менеджеру сессий на удаление сессий
-    m_sessionManager.requestGracefulShutdown();
+    //requestGracefulShutdown();
     res.set_content("Graceful shutdown flag set", "text/plain");
     // Можно в цикле ожидать выставление флага внутри sessionManager,
     // который скажет о сбросе, определенное время, если он не появится
     // то выдать ошибку выполнения в реквесте.
     res.status = 200; // OK
-    Logger::info("HTTP server response: graceful shutdown flag set");
+    LOG_INFO("HTTP server response: graceful shutdown flag set");
 }

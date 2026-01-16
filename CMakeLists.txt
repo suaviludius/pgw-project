@@ -29,6 +29,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+add_subdirectory(src)
+
 if(BUILD_TESTS)
     FetchContent_Declare(
         googletest
@@ -40,5 +42,3 @@ if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-add_subdirectory(src)

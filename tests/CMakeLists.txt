@@ -46,15 +46,17 @@ target_include_directories(
 )
 target_include_directories(
     test_session_manager PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/server/interfaces # Важно указать перед server
-    ${CMAKE_SOURCE_DIR}/tests/mocks # Важно указать перед common, где лежит настоящий Logger
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces
+    # ОБЯЗАТЕЛЬНО! mocks подключать перед common (в нем лежит настоящая версия логгера, а в mock заглушка)
+    ${CMAKE_SOURCE_DIR}/tests/mocks
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/server
 )
 target_include_directories(
     test_udp_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/server/interfaces # Важно указать перед server
-    ${CMAKE_SOURCE_DIR}/tests/mocks # Важно указать перед common
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces
+    # ОБЯЗАТЕЛЬНО! mocks подключать перед common (в нем лежит настоящая версия логгера, а в mock заглушка)
+    ${CMAKE_SOURCE_DIR}/tests/mocks
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/server
 )

@@ -1,4 +1,4 @@
-#include "mocks/logger.h"
+#include "mocks/logger.h"  // Логгер заглушка
 
 #include "SessionManager.h"
 
@@ -111,12 +111,6 @@ TEST_F(SessionManagerTest, GracefulShutdownSucsess) {
         EXPECT_EQ(manager.getSessionCount(), i+1);
     }
     EXPECT_EQ(manager.getSessionCount(), 10);
-    manager.gracefulShutdown(3); // Удаляем по 3 за раз
-    EXPECT_EQ(manager.getSessionCount(), 7);
-    manager.gracefulShutdown(3);
-    EXPECT_EQ(manager.getSessionCount(), 4);
-    manager.gracefulShutdown(3);
-    EXPECT_EQ(manager.getSessionCount(), 1);
-    manager.gracefulShutdown(3); // Случай сессий на удаление > актуальных сессий
+    manager.gracefulShutdown(); // Удаляем сессии
     EXPECT_EQ(manager.getSessionCount(), 0);
 }

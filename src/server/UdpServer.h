@@ -5,7 +5,7 @@
 #include "ICdrWriter.h"
 #include "ISocket.h"
 
-//#include <memory> // unique_ptr
+#include <memory> // unique_ptr
 
 class UdpServer{
 private:
@@ -23,9 +23,10 @@ public:
     // Передаем соккет в конструктор, чтобы тестировать и много не думать
     explicit UdpServer(
         ISessionManager& sessionManager,
-        ICdrWriter& m_cdrWriter,
+        ICdrWriter& cdrWriter,
         pgw::types::ConstIp ip,
-        pgw::types::Port port
+        pgw::types::Port port,
+        std::unique_ptr<ISocket> socket = nullptr
     );
     ~UdpServer();
 

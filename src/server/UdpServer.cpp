@@ -8,29 +8,31 @@
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      ICdrWriter& cdrWriter,
                      pgw::types::ConstIp ip,
-                     pgw::types::Port port)
+                     pgw::types::Port port,
+                     std::unique_ptr<ISocket> socket)
 try : m_sessionManager{sessionManager},
       m_cdrWriter{cdrWriter},
-      //m_socket{std::make_unique<MockSocket>()},   // Для тестов
-      m_socket{std::make_unique<Socket>()},     // Для релиза
+      m_socket{socket ? std::move(socket) : std::make_unique<Socket>()}, // Если прийдет пустой указатель, то создаем соккет сами, иначе перемещаем
+      // m_socket{std::move(socket)},
       m_ip{ip},
       m_port{port},
       m_running{false}{
-    Logger::info("UDP server initialized");
+    LOG_INFO("UDP server initialized");
 }
 catch(const std::exception& e){
-    Logger::error("UDP server initialization  filed: " + std::string(e.what()));
+    LOG_ERROR("UDP server initialization  filed: {}", e.what());
     // Пробрасываем исключение дальше
     throw std::runtime_error("UDP server initialization failed");
 }
 
 UdpServer::~UdpServer(){
     stop();
+    LOG_INFO("UDP server deleted");
 }
 
 void UdpServer::start(){
     if(m_running) {
-        Logger::warn("UDP server already running");
+        LOG_WARN("UDP server already running");
         return;
     }
     try{
@@ -38,18 +40,18 @@ void UdpServer::start(){
         m_running = true;
     }
     catch (const std::exception& e){
-        Logger::error("UDP server start failed " + std::string(m_ip) + ":" + std::to_string(m_port) + " - " + std::string(e.what()));
+        LOG_ERROR("UDP server start failed {} : {} - {}", m_ip, m_port, e.what());
         // Пробрасываем с дополнительным контекстом
         throw std::runtime_error("UDP server start failed");
     }
-    Logger::info("UDP server sucseccdully start");
+    LOG_INFO("UDP server sucseccdully start");
     // run();
 }
 
 void UdpServer::stop(){
     if(!m_running) return;
     m_running = false;
-    Logger::info("UDP server stopped");
+    LOG_INFO("UDP server stopped");
 }
 
 // Метод раcсчитан на использование с менеджером poll, epoll, select
@@ -77,20 +79,21 @@ void UdpServer::handler(){
                     default: break;
                 }
             }
+            m_socket->send(answer,packet.senderAddr);
         }
     }
     catch(const std::exception& e){
-        Logger::error("UDP server runninig error: " + std::string(e.what()));
+        LOG_ERROR("UDP server runninig error: {}", e.what());
     }
 }
 
 bool UdpServer::validateImsi(const std::string& imsi){
     if (imsi.length() != 15) {
-        Logger::warn("UDP server receive imsi whith invalid size: " + std::string(imsi));
+        LOG_WARN("UDP server receive imsi whith invalid size: {} ", imsi);
         return false;
     }
     if (!std::all_of(imsi.begin(), imsi.end(), ::isdigit)) {
-        Logger::warn("UDP server receive imsi whith invalid symbols: " + std::string(imsi));
+        LOG_WARN("UDP server receive imsi whith invalid symbols: {}", imsi);
         return false;
     }
     return true;

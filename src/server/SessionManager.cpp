@@ -1,8 +1,8 @@
 #include "SessionManager.h"
 #include "logger.h"
 
-#include <thread> // Для задержки в graceful shutdown
 #include <algorithm>
+#include <thread>   // std::thread
 
 SessionManager::SessionManager(
     const pgw::types::Blacklist& blacklist,
@@ -11,11 +11,11 @@ SessionManager::SessionManager(
 ) : m_blacklist{blacklist},
     m_sessionTimeoutSec{timeout},
     m_shutdownRate{rate} {
-    Logger::info("Session Manager created");
+    LOG_INFO("Session Manager created");
 }
 
 SessionManager::~SessionManager(){
-    Logger::info("Session Manager deleted");
+    LOG_INFO("Session Manager deleted");
 }
 
 SessionManager::sessions::iterator SessionManager::findSession(pgw::types::ConstImsi imsi) {
@@ -34,13 +34,13 @@ SessionManager::sessions::const_iterator SessionManager::findSession(pgw::types:
 
 SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi imsi){
     if(m_blacklist.contains(imsi)){
-        Logger::warn("Session rejected (blacklisted) for IMSI: " + std::string(imsi));
+        LOG_WARN("Session rejected (blacklisted) for IMSI: {}" , imsi);
         return CreateResult::REJECTED_BLACKLIST;
     }
 
     // Проверяем существует ли сессия
     if (hasSession(imsi)){
-        Logger::debug("Session already exists for IMSI: " + std::string(imsi));
+        LOG_DEBUG("Session already exists for IMSI: {} ", imsi);
         return CreateResult::ALREADY_EXISTS;
     }
 
@@ -48,16 +48,16 @@ SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi
         auto session {std::make_unique<Session>(imsi)};     // Создаём новую сессию через unique_ptr
         bool inserted {m_sessions.add(std::move(session))}; // Перемещаем сессию в контейнер
         if(inserted){
-            Logger::info("Session created for IMSI: " + std::string(imsi));
+            LOG_INFO("Session created for IMSI: {} ", imsi);
             return CreateResult::CREATED;
         }
         else{
-            Logger::error("Session creation failed for IMSI: " + std::string(imsi));
+            LOG_ERROR("Session creation failed for IMSI: {} ", imsi);
             return CreateResult::ERROR;
         }
     }
     catch (const std::exception& e){
-        Logger::error("Session creation failed (exception) for IMSI: " + std::string(imsi) + static_cast<std::string>(e.what()));
+        LOG_ERROR("Session creation failed (exception) for IMSI: {}. {}", imsi, e.what());
         return CreateResult::ERROR;
     }
 }
@@ -66,9 +66,9 @@ void SessionManager::removeSession(pgw::types::ConstImsi imsi){
     auto it {findSession(imsi)};
     if (it != m_sessions.end()){
         m_sessions.erase(it);
-        Logger::session_deleted(imsi);
+        LOG_INFO("SESSION_DELETED imsi: {}",imsi);
     } else {
-        Logger::debug("Session not found for removal IMSI: " + std::string(imsi));
+        LOG_DEBUG("Session not found for removal IMSI: {}" , imsi);
     }
 }
 
@@ -78,7 +78,7 @@ void SessionManager::cleanTimeoutSessions(){
         if ((*it)->getAge() >= m_sessionTimeoutSec) {
             auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
             it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
-            Logger::session_deleted(imsi);
+            LOG_INFO("SESSION_DELETED imsi: {}",imsi);
         } else {
             ++it;
         }
@@ -86,10 +86,7 @@ void SessionManager::cleanTimeoutSessions(){
 }
 
 void SessionManager::gracefulShutdown(){
-    if (!m_shutdownRequest) {
-        return;  // Shutdown не запрошен
-    }
-    Logger::info("Sessions graceful shutdown start");
+    LOG_INFO("Sessions graceful shutdown start");
     // Рассчитываем интервал между удалениями сессий
     // Например, rate = 10 сессий/сек -> интервал = 1000ms / 10 = 100ms на сессию
     const auto delayBetweenSessions = std::chrono::milliseconds(1000 / m_shutdownRate);
@@ -97,7 +94,7 @@ void SessionManager::gracefulShutdown(){
     auto it {m_sessions.begin()};
     auto lastDeletionTime = std::chrono::steady_clock::now();
     while (it != m_sessions.end()) {
-        auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
+        auto imsi {(*it)->getImsi()};
         // Задержка для контроля скорости
         auto now = std::chrono::steady_clock::now();
         auto timeSinceLastDeletion = now - lastDeletionTime;
@@ -105,15 +102,14 @@ void SessionManager::gracefulShutdown(){
             auto calculatedDelay = delayBetweenSessions - timeSinceLastDeletion;
             std::this_thread::sleep_for(calculatedDelay);
         }
-        // Удаляем сессию
-        it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
-        Logger::session_deleted(imsi);
+        // Удаляем сессию. erase возвращает следующий валидный итератор
+        it = m_sessions.erase(it);
+        LOG_INFO("SESSION_DELETED imsi: {}", imsi);
     }
     if (m_sessions.empty()) {
-        m_shutdownRequest = false;  // Сбрасываем флаг
-        Logger::info("Sessions graceful shutdown completed");
+        LOG_INFO("Sessions graceful shutdown completed");
     }
     else {
-        Logger::info("Sessions graceful shutdown error");
+        LOG_INFO("Sessions graceful shutdown error");
     }
 }

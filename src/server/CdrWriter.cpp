@@ -1,4 +1,5 @@
 #include "CdrWriter.h"
+#include "logger.h"
 
 CdrWriter::CdrWriter(pgw::types::ConstFilePath filename){
     // К сожалению, для open() строка должна содержать '\0' символ
@@ -7,6 +8,7 @@ CdrWriter::CdrWriter(pgw::types::ConstFilePath filename){
         m_file << "CDR strated\n";
         m_file << "IMSI, Action, Timestamp\n";
     }
+    LOG_INFO("CDR writer created");
 }
 
 CdrWriter::~CdrWriter(){
@@ -14,6 +16,7 @@ CdrWriter::~CdrWriter(){
         m_file << "CDR ended\n";
         m_file.close();
     }
+    LOG_INFO("CDR writer deleted");
 }
 
 void CdrWriter::writeAction(pgw::types::ConstImsi imsi, std::string_view action){
