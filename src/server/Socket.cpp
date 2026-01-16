@@ -32,7 +32,7 @@ Socket::Socket(){
         throw std::runtime_error("Socket creation failed (non-blocking): " + std::string(strerror(errno)));
     }
     // Не используем таймаут на прием, чтобы не тратить время программы впустую
-    Logger::debug("Socket created");
+    LOG_DEBUG("Socket created");
 }
 
 Socket::~Socket(){
@@ -42,7 +42,7 @@ Socket::~Socket(){
 void Socket::close() {
     if(m_fd > 0) {
         ::close(m_fd);
-        Logger::debug("Socket close");
+        LOG_DEBUG("Socket close");
         m_fd = -1;
     }
 }
@@ -63,7 +63,7 @@ void Socket::bind(pgw::types::ConstIp ip, pgw::types::Port port){
         throw std::runtime_error("Socket bind failed: " + std::string(strerror(errno)));
     }
 
-    Logger::info("Socket bind " + addrToString(addr));
+    LOG_INFO("Socket bind " + addrToString(addr));
 }
 
 Socket::Packet Socket::receive(){
@@ -79,7 +79,7 @@ Socket::Packet Socket::receive(){
     buffer.resize(bytesReceived); // Изменяем размер вектора до фактического количества принятых байт
     std::string data(buffer.begin(), buffer.end());
 
-    Logger::trace("Received " + std::to_string(bytesReceived) + " bytes on socket: " + addrToString(addr));
+    LOG_TRACE("Received {}" + std::to_string(bytesReceived) + " bytes on socket: " + addrToString(addr));
 
     return Packet{std::move(data), addr};
 }
@@ -91,7 +91,7 @@ void Socket::send(std::string_view data, const sockaddr_in& addr){
         throw std::runtime_error("Socket failed to sent data: " + std::string(strerror(errno)));
     }
 
-    Logger::trace("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));
+    LOG_TRACE("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));
 }
 
 std::string Socket::addrToString(const sockaddr_in& addr) {
