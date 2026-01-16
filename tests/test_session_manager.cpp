@@ -1,4 +1,4 @@
-#include "mocks/logger.h"
+#include "mocks/logger.h"  // Логгер заглушка
 
 #include "SessionManager.h"
 
