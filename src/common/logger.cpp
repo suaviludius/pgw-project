@@ -6,41 +6,46 @@
 #include <iostream> // Для использования std::cerr
 #include <map>
 
-Logger::logger Logger::m_logger = nullptr;
+std::shared_ptr<spdlog::logger> logPtr = nullptr;
 
-void Logger::init(std::string_view logFile, std::string_view logLevel){
-    if (m_logger) {
-        return; // Уже инициализирован
+void logger::init(std::string_view logFile,
+                  std::string_view logLevel,
+                  size_t maxFileSize,
+                  size_t maxFiles){
+    if (logPtr) { // Уже инициализирован
+        LOG_WARN("Logger already initialised");
+        return;
     }
     try{
-        // Определяем приемники логов
+        // Определяем приемники логов (mt - мультипоточный)
         auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            static_cast<std::string>(logFile),
-            1024*1024*5, // 5 MB максимальный размер файл
-            3,           // Хранить 3 ротированный файл
+            std::string(logFile),
+            maxFileSize, // 5 MB максимальный размер файл
+            maxFiles,    // Хранить 3 ротированный файл
             false        // Не ротировать при открытии
         );
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
         // Создаем логгер
-        m_logger = std::make_shared<spdlog::logger>("pgw");
-        m_logger->sinks().push_back(file_sink);
-        m_logger->sinks().push_back(console_sink);
-        m_logger->set_level(parse_level(logLevel));
-        m_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
+        logPtr = std::make_shared<spdlog::logger>("pgw");
+        logPtr->sinks().push_back(file_sink);
+        logPtr->sinks().push_back(console_sink);
+        logPtr->set_level(parse_level(logLevel));
+        logPtr->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
 
-        spdlog::set_default_logger(m_logger);
+        // Регистрируем как логгер по умолчанию
+        spdlog::register_logger(logPtr);
+        spdlog::set_default_logger(logPtr);
 
-        info("Logger initialized successfully");
+        LOG_INFO("Logger initialized successfully with level: {}", logLevel);
     }
     catch(const std::exception& e){
-        shutdown();
         std::cerr << "Logger initialization failed: " << e.what() << '\n';
         throw;
     }
 }
 
-Logger::level Logger::parse_level(std::string_view level) {
+logger::level logger::parse_level(std::string_view level) {
     static const std::map<std::string_view, spdlog::level::level_enum> level_map {
         {"TRACE", spdlog::level::trace},
         {"DEBUG", spdlog::level::debug},
@@ -55,59 +60,28 @@ Logger::level Logger::parse_level(std::string_view level) {
         return it->second;
     }
 
-    throw std::runtime_error("Invalid log level: " + static_cast<std::string>(level));
+    throw std::runtime_error("Invalid log level: " + std::string(level));
 }
 
-void Logger::shutdown(){
-    if(m_logger){
-        m_logger->flush(); // Принудительный сброс логов на диск
-        spdlog::drop(m_logger->name()); // Удаляем логгер из списка
+void logger::shutdown(){
+    if(logPtr){
+        logPtr->flush(); // Принудительный сброс логов на диск
+        spdlog::drop(logPtr->name()); // Удаляем логгер из списка
+        logPtr.reset();
+    } else {
+        LOG_WARN("Cannot set level: logger not initialized");
     }
-    m_logger = nullptr;
 }
 
-// Базовые методы логирования
-void Logger::trace(std::string_view message) {
-    if (m_logger) m_logger->trace(message);
+bool logger::isInit() {
+    return logPtr != nullptr;
 }
 
-void Logger::debug(std::string_view message) {
-    if (m_logger) m_logger->debug(message);
-}
-
-void Logger::info(std::string_view message) {
-    if (m_logger) m_logger->info(message);
-}
-
-void Logger::warn(std::string_view message) {
-    if (m_logger) m_logger->warn(message);
-}
-
-void Logger::error(std::string_view message) {
-    if (m_logger) m_logger->error(message);
-}
-
-void Logger::critical(std::string_view message) {
-    if (m_logger) m_logger->critical(message);
-}
-
-// Методы логики приложения
-void Logger::session_created(std::string_view imsi) {
-    if (m_logger) m_logger->trace("Session created imsi={}", imsi);
-}
-
-void Logger::session_rejected(std::string_view imsi, std::string_view reason) {
-    if (m_logger) m_logger->warn("Session rejected imsi={} reason={}", imsi, reason);
-}
-
-void Logger::session_deleted(std::string_view imsi) {
-    if (m_logger) m_logger->info("Session deleted imsi={}", imsi);
-}
-
-void Logger::udp_request(std::string_view imsi, std::string_view response) {
-    if (m_logger) m_logger->debug("UDP request imsi={} response={}", imsi, response);
-}
-
-void Logger::http_request(std::string_view endpoint, std::string_view client_ip) {
-    if (m_logger) m_logger->info("HTTP request endpoint={} client_ip={}", endpoint, client_ip);
+void logger::set_level(spdlog::level::level_enum level) {
+    if (logPtr) {
+        logPtr->set_level(level);
+        LOG_INFO("Log level changed to: {}", spdlog::level::to_string_view(level));
+    } else {
+        LOG_WARN("Cannot set level: logger not initialized");
+    }
 }
