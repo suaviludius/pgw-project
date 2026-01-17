@@ -36,6 +36,7 @@ void UdpServer::start(){
         return;
     }
     try{
+        LOG_INFO("Starting UDP server ...");
         m_socket->bind(m_ip,m_port);
         m_running = true;
     }
@@ -44,23 +45,32 @@ void UdpServer::start(){
         // Пробрасываем с дополнительным контекстом
         throw std::runtime_error("UDP server start failed");
     }
-    LOG_INFO("UDP server sucseccdully start");
+    LOG_INFO("UDP server started");
     // run();
 }
 
 void UdpServer::stop(){
-    if(!m_running) return;
+    if(!m_running) {
+        LOG_INFO("UDP server already stopped");
+        return;
+    }
     m_running = false;
     LOG_INFO("UDP server stopped");
 }
 
 // Метод раcсчитан на использование с менеджером poll, epoll, select
 void UdpServer::handler(){
-    if(!m_running) return;
+    if(!m_running) {
+        LOG_INFO("UDP server already running");
+        return;
+    }
     try{
         // Читаем все доступные пакеты
         while(true){
             auto packet = m_socket->receive();
+            // Чтение происходит в неблокирующем режиме, т.е. в случае если на сокете данных,
+            // то соккет не будет блокировать программный процесс на себе до прихода данных,
+            // а просто вернет управление вызывающей функции со словами "не сегодня, дружочек, в другой раз"
             if(packet.data.empty()) break;
             std::string answer {"rejected"};
             std::string imsi = packet.data;

@@ -11,7 +11,7 @@ SessionManager::SessionManager(
 ) : m_blacklist{blacklist},
     m_sessionTimeoutSec{timeout},
     m_shutdownRate{rate} {
-    LOG_INFO("Session Manager created");
+    LOG_INFO("Session Manager initialized");
 }
 
 SessionManager::~SessionManager(){

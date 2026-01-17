@@ -8,7 +8,7 @@ CdrWriter::CdrWriter(pgw::types::ConstFilePath filename){
         m_file << "CDR strated\n";
         m_file << "IMSI, Action, Timestamp\n";
     }
-    LOG_INFO("CDR writer created");
+    LOG_INFO("CDR writer initialized");
 }
 
 CdrWriter::~CdrWriter(){
