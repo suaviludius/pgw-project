@@ -20,12 +20,15 @@ private:
 
     // Поток работы http сервера
     std::thread m_serverThread;
+    // Ссылка на атомик из приложения завершения сессий
+    std::atomic<bool>& m_shutdownRequest;
 
 public:
     // Передаем соккет в конструктор, чтобы тестировать и много не думать
     explicit HttpServer(
         ISessionManager& sessionManager,
-        pgw::types::Port port
+        pgw::types::Port port,
+        std::atomic<bool>& shutdownRequest
     );
     ~HttpServer();
 

@@ -1,14 +1,17 @@
 #include "HttpServer.h"
 #include "logger.h"
 
-HttpServer::HttpServer(ISessionManager& sessionManager,
-                     pgw::types::Port port)
-    : m_sessionManager{sessionManager},
-      m_port{port},
-      m_server{std::make_unique<httplib::Server>()},
-      m_running{false}{
+HttpServer::HttpServer(
+    ISessionManager& sessionManager,
+    pgw::types::Port port,
+    std::atomic<bool>& shutdownRequest
+) : m_sessionManager{sessionManager},
+    m_port{port},
+    m_shutdownRequest{shutdownRequest},
+    m_server{std::make_unique<httplib::Server>()},
+    m_running{false}{
     setRoutes(); // Настраиваем серверные запросы до bind() сервера
-    LOG_INFO("UDP server initialized");
+    LOG_INFO("HTTP server initialized");
 }
 
 HttpServer::~HttpServer(){
@@ -45,10 +48,19 @@ void HttpServer::start(){
 }
 
 void HttpServer::stop(){
-    if(!m_running) return;
+    if(!m_running) {
+        LOG_INFO("HTTP server already stopped");
+        return;
+    }
+    LOG_INFO("Stopping HTTP server...");
     m_running = false;
+
+    // Даем время для обработки текущих запросов
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // Останавливаем сервер
     m_server->stop();
 
+    // Ждем завершения потока
     if (m_serverThread.joinable()) {
         m_serverThread.join();
     }
@@ -67,11 +79,18 @@ void HttpServer::setRoutes() {
     m_server->Post("/stop", [this](const httplib::Request& req, httplib::Response& res) {
         handleStop(req, res);
     });
-
     // Если запрос не соответсвтует описанным выше
     m_server->set_error_handler([](const httplib::Request&, httplib::Response& res) {
         res.set_content("Not Found", "text/plain");
         res.status = 404; // Not found
+    });
+    // Обработчик для проверки флага остановки
+    m_server->set_pre_routing_handler([this](const httplib::Request&, httplib::Response& res) {
+        if(!m_running){
+            res.status = 503; // Service Unavaliable
+            return httplib::Server::HandlerResponse::Handled;
+        }
+        return httplib::Server::HandlerResponse::Unhandled;
     });
 }
 
@@ -93,11 +112,11 @@ void HttpServer::handleCheckSubscriber(const httplib::Request& req, httplib::Res
 void HttpServer::handleStop(const httplib::Request& req, httplib::Response& res){
     LOG_INFO("HTTP server request: graceful shutdown");
     // Передаем запрос менеджеру сессий на удаление сессий
-    //requestGracefulShutdown();
-    res.set_content("Graceful shutdown flag set", "text/plain");
+    m_shutdownRequest.store(true, std::memory_order_release);
+    res.set_content("Graceful shutdown request set", "text/plain");
     // Можно в цикле ожидать выставление флага внутри sessionManager,
     // который скажет о сбросе, определенное время, если он не появится
     // то выдать ошибку выполнения в реквесте.
     res.status = 200; // OK
-    LOG_INFO("HTTP server response: graceful shutdown flag set");
+    LOG_INFO("HTTP server response: graceful shutdown request set");
 }
