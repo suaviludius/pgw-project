@@ -8,8 +8,8 @@
 class ISocket {
 public:
     struct Packet{
-        std::string data; // Тут будет лежать imsi
-        sockaddr_in senderAddr; // Этот адрес используем для send() внутри сервера
+        std::string data;       // Пришедшие данные
+        sockaddr_in senderAddr; // Адрес отправителя (также адрес назначения при отправке)
     };
 
     virtual ~ISocket() = default;
