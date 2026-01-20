@@ -1,5 +1,6 @@
-#include "CdrWriter.h"
-#include "logger.h"
+#include "server/CdrWriter.h"
+
+#include "common/logger.h"
 
 CdrWriter::CdrWriter(pgw::types::ConstFilePath filename){
     // К сожалению, для open() строка должна содержать '\0' символ
