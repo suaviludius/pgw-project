@@ -1,6 +1,6 @@
-#include "server/Socket.h"
+#include "Socket.h"
 
-#include "common/logger.h"
+#include "logger.h"
 
 #include <arpa/inet.h> // inet_pton / htons / ntohs
 
@@ -41,7 +41,7 @@ Socket::Socket(){
     }
     // Примечание: Таймауты на прием не используются для максимальной производительности
 
-    LOG_DEBUG("Socket created");
+    LOG_DEBUG("Socket initialized");
 }
 
 Socket::~Socket(){
@@ -56,25 +56,33 @@ void Socket::close() {
     }
 }
 
-void Socket::bind(pgw::types::ConstIp ip, pgw::types::Port port){
-    sockaddr_in addr{};                     // Структура адреса сокета (ip + port + ...)
+sockaddr_in Socket::createAddress(pgw::types::constIp_t ip, pgw::types::port_t port){
+    sockaddr_in addr;                       // Структура адреса (для преобразования IP и порта)
     memset(&addr, 0 ,sizeof(sockaddr_in));  // Перед использованием нужно обнулить структуру
     addr.sin_family = AF_INET;              // IPv4
     addr.sin_port = htons(port);            // Преобразует порядок байт в сетевой (big-endian)
 
-    // Преобразуем строковый IP в бинарный формат
+    // Для m_addr.sin_addr преобразуем строковый IP в бинарный формат
     if (::inet_pton(AF_INET, std::string(ip).c_str(), &addr.sin_addr) != 1) {
         throw std::runtime_error("Socket bind failed to ip address " +
                                  std::string(ip));
     }
 
+    LOG_INFO("Socket address created {}", (addrToString(addr)));
+
+    return addr;
+}
+
+void Socket::bind(pgw::types::constIp_t ip, pgw::types::port_t port){
+    m_addr = createAddress(ip,port);
+
     // Привязываем сокет к адресу
-    if (::bind(m_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
+    if (::bind(m_fd, reinterpret_cast<sockaddr*>(&m_addr), sizeof(m_addr)) == -1) {
         throw std::runtime_error("Socket bind failed: " +
                                  std::string(strerror(errno)));
     }
 
-    LOG_INFO("Socket bind " + addrToString(addr));
+    LOG_INFO("Socket bind " + addrToString(m_addr));
 }
 
 Socket::Packet Socket::receive(){
@@ -103,7 +111,7 @@ Socket::Packet Socket::receive(){
     buffer.resize(bytesReceived);
     std::string data(buffer.begin(), buffer.end());
 
-    LOG_TRACE("Received {}" + std::to_string(bytesReceived) +
+    LOG_TRACE("Received " + std::to_string(bytesReceived) +
               " bytes on socket: " + addrToString(addr));
 
     return Packet{std::move(data), addr};
@@ -118,6 +126,11 @@ void Socket::send(std::string_view data, const sockaddr_in& addr){
     }
 
     LOG_TRACE("Sent " + std::to_string(bytesSent) + " bytes on socket: " + addrToString(addr));
+}
+
+void Socket::send(std::string_view data, pgw::types::constIp_t ip, pgw::types::port_t port){
+    sockaddr_in addr = createAddress(ip,port);
+    send(data,addr);
 }
 
 std::string Socket::addrToString(const sockaddr_in& addr) {
