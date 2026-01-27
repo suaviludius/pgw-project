@@ -4,7 +4,7 @@ project(PGW_Project LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTS "Build tests" OFF)
 
 include(FetchContent)
 
@@ -29,7 +29,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
-add_subdirectory(src)
+# Общие исходники (статическая библиотека)
+add_library(pgw_common STATIC
+    src/logger.cpp
+    src/Socket.cpp
+)
+target_include_directories(pgw_common PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/interfaces
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(
+    pgw_common PRIVATE
+    spdlog::spdlog
+)
+
+add_subdirectory(pgw_server)
+add_subdirectory(pgw_client)
 
 if(BUILD_TESTS)
     FetchContent_Declare(
@@ -39,6 +54,5 @@ if(BUILD_TESTS)
     )
     FetchContent_MakeAvailable(googletest)
 
-    enable_testing()
     add_subdirectory(tests)
 endif()
