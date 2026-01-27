@@ -1,4 +1,4 @@
-#include "config.h"
+#include "Config.h"
 #include "constants.h"
 
 #include <gtest/gtest.h>
@@ -57,7 +57,7 @@ TEST_F(ConfigTest, MissingFile){
     // Act
     // Assert
     EXPECT_NO_THROW({
-        Config config("non_existent_file.json");
+        pgw::server::Config config("non_existent_file.json");
     });
 }
 
@@ -79,7 +79,7 @@ TEST_F(ConfigTest, SuccessfulReading) {
 
     EXPECT_NO_THROW({
         // Act
-        Config config(CONFIG_FILE);
+        pgw::server::Config config(CONFIG_FILE);
 
         // Assert
         EXPECT_EQ(config.getUdpIp(), "10.0.0.0");
@@ -103,16 +103,16 @@ TEST_F(ConfigTest, UsesDefaultValues) {
 
     EXPECT_NO_THROW({
         // Act
-        Config config(CONFIG_FILE);
+        pgw::server::Config config(CONFIG_FILE);
         // Assert
-        EXPECT_EQ(config.getUdpIp(), pgw::constants::defaults::UDP_IP);
-        EXPECT_EQ(config.getUdpPort(), pgw::constants::defaults::UDP_PORT);
-        EXPECT_EQ(config.getHttpPort(), pgw::constants::defaults::HTTP_PORT);
-        EXPECT_EQ(config.getSessionTimeoutSec(), pgw::constants::defaults::TIMEOUT_SEC);
-        EXPECT_EQ(config.getCdrFile(), pgw::constants::defaults::CDR_FILE);
-        EXPECT_EQ(config.getGracefulShutdownRate(), pgw::constants::defaults::GRACEFUL_SHUTDOWN_RATE);
-        EXPECT_EQ(config.getLogFile(), pgw::constants::defaults::LOG_FILE);
-        EXPECT_EQ(config.getLogLevel(), pgw::constants::defaults::LEVEL);
+        EXPECT_EQ(config.getUdpIp(), pgw::constants::server::defaults::UDP_IP);
+        EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
+        EXPECT_EQ(config.getHttpPort(), pgw::constants::server::defaults::HTTP_PORT);
+        EXPECT_EQ(config.getSessionTimeoutSec(), pgw::constants::server::defaults::TIMEOUT_SEC);
+        EXPECT_EQ(config.getCdrFile(), pgw::constants::server::defaults::CDR_FILE);
+        EXPECT_EQ(config.getGracefulShutdownRate(), pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE);
+        EXPECT_EQ(config.getLogFile(), pgw::constants::server::defaults::LOG_FILE);
+        EXPECT_EQ(config.getLogLevel(), pgw::constants::server::defaults::LEVEL);
         EXPECT_EQ(config.getBlacklist().size(),0);
     });
 }
@@ -125,11 +125,11 @@ TEST_F(ConfigTest, ThrowInvalidPort) {
 
     EXPECT_NO_THROW({
         // Act
-        Config config(CONFIG_FILE);
+        pgw::server::Config config(CONFIG_FILE);
 
         // Assert
         EXPECT_FALSE(config.isValid());
         EXPECT_FALSE(config.getError().empty());
-        EXPECT_EQ(config.getUdpPort(), pgw::constants::defaults::UDP_PORT);
+        EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
     });
 }
