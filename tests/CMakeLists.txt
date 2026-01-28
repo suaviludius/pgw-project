@@ -41,6 +41,7 @@ target_sources(
 )
 target_sources(
     test_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}/pgw_client/Config.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriter.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
@@ -79,6 +80,7 @@ target_include_directories(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/pgw_client
     ${CMAKE_SOURCE_DIR}/pgw_server
     ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
 )
