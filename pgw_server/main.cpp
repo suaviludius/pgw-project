@@ -14,7 +14,7 @@
 // Миллисекундный таймаут для poll()
 constexpr int POLL_TIMEOUT_MS {100};
 
-// Миллисекундный таймер очищения просроченных сессий
+// Cекундный таймер очищения просроченных сессий
 constexpr int SESSION_TIMEOUT_S {10};
 
 int main(int argc, char* argv[]){
@@ -26,10 +26,10 @@ int main(int argc, char* argv[]){
         }
 
         // Чистаем конфигурацию из JSON файла
-        pgw::server::Config config("configPath");
+        pgw::server::Config config(configPath);
 
         // Инициализируем логгер параметрами из конфиг файла
-        logger::init(
+        pgw::logger::init(
             config.getLogFile(),
             config.getLogLevel()
         );
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
             // Периодические задачи (выполняются по таймауту)
             auto now = std::chrono::steady_clock::now();
 
-            // Очистка просроченных сессий (каждые SESSION_TIMEOUT_MS миллисекунд)
+            // Очистка просроченных сессий (каждые SESSION_TIMEOUT_S секунд)
             if (now - lastCleanup > std::chrono::seconds(SESSION_TIMEOUT_S)) {
                sessionManager.cleanTimeoutSessions();
                lastCleanup = now;
@@ -124,10 +124,10 @@ int main(int argc, char* argv[]){
         udpServer.stop();
     }
     catch(const std::exception& e){
-        if(logger::isInit){
+        if(pgw::logger::isInit){
             // Критическая ошибка при выполнении
             LOG_CRITICAL("Fatal error: {}", e.what());
-            logger::shutdown();
+            pgw::logger::shutdown();
         }
         else {
             // Логгер не инициализирован - вывод в stderr
