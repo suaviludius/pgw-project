@@ -4,7 +4,9 @@ project(PGW_Project LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_CLIENT "Build client" ON)
+option(BUILD_SERVER "Build server" ON)
+option(BUILD_TESTS "Build tests" ON)
 
 include(FetchContent)
 
@@ -43,8 +45,13 @@ target_link_libraries(
     spdlog::spdlog
 )
 
-add_subdirectory(pgw_server)
-add_subdirectory(pgw_client)
+if(BUILD_CLIENT)
+    add_subdirectory(pgw_client)
+endif()
+
+if(BUILD_SERVER)
+    add_subdirectory(pgw_server)
+endif()
 
 if(BUILD_TESTS)
     FetchContent_Declare(
@@ -56,3 +63,11 @@ if(BUILD_TESTS)
 
     add_subdirectory(tests)
 endif()
+
+# Сообщение о конфигурации сборки
+message(STATUS "=========================")
+message(STATUS "  Build configuration:")
+message(STATUS "  Server: ${BUILD_SERVER}")
+message(STATUS "  Client: ${BUILD_CLIENT}")
+message(STATUS "  Tests: ${BUILD_TESTS}")
+message(STATUS "=========================")
