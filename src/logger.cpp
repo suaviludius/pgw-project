@@ -6,6 +6,8 @@
 #include <iostream> // Для использования std::cerr
 #include <map>
 
+namespace pgw {
+
 std::shared_ptr<spdlog::logger> logPtr = nullptr;
 
 void logger::init(std::string_view logFile,
@@ -85,3 +87,5 @@ void logger::set_level(spdlog::level::level_enum level) {
         LOG_WARN("Cannot set level: logger not initialized");
     }
 }
+
+} // namespace pgw
