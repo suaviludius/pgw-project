@@ -11,6 +11,7 @@ public:
     // virtual ~MockSessionManager() = default;
     MOCK_METHOD(CreateResult, createSession, (pgw::types::constImsi_t imsi), (override));
     MOCK_METHOD(bool, hasSession, (pgw::types::constImsi_t imsi), (const, override));
+    MOCK_METHOD(bool, addToBlacklist, (pgw::types::constImsi_t imsi), (override));
     MOCK_METHOD(size_t, countActiveSession, (), (const, override));
 };
 
