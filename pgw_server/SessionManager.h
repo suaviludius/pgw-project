@@ -25,7 +25,7 @@ private:
     sessions m_sessions;
 
     // Ссылка на черный список заблокированных абонентов
-    const pgw::types::Blacklist& m_blacklist;
+    pgw::types::Blacklist& m_blacklist;
 
     // Время жизни сессий
     const pgw::types::seconds_t m_sessionTimeoutSec;
@@ -38,7 +38,7 @@ private:
 public:
     explicit SessionManager(
         ICdrWriter& cdrWriter,
-        const pgw::types::Blacklist& blacklist,
+        pgw::types::Blacklist& blacklist,
         const pgw::types::seconds_t timeout,
         const pgw::types::rate_t rate
     );
@@ -46,6 +46,9 @@ public:
 
     // Проверяет наличие активной сессии для указанного IMSI
     bool hasSession(pgw::types::constImsi_t imsi) const override;
+
+    // Добавляет IMSI в черный список
+    bool addToBlacklist(pgw::types::constImsi_t imsi) override;
 
     // Возвращает текущее количество активных сессий
     size_t countActiveSession() const override;

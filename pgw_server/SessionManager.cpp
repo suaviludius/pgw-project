@@ -1,13 +1,14 @@
 #include "SessionManager.h"
 
 #include "logger.h"
+#include "validation.h"
 
 #include <algorithm>
 #include <thread>
 
 SessionManager::SessionManager(
     ICdrWriter& cdrWriter,
-    const pgw::types::Blacklist& blacklist,
+    pgw::types::Blacklist& blacklist,
     const pgw::types::seconds_t timeout,
     const pgw::types::rate_t rate)
     : m_cdrWriter{cdrWriter},
@@ -39,6 +40,13 @@ bool SessionManager::hasSession(pgw::types::constImsi_t imsi) const {
         [&imsi](const auto& session){
             return session->getImsi() == imsi;
         }) != m_sessions.end();
+}
+
+bool SessionManager::addToBlacklist(pgw::types::constImsi_t imsi) {
+    if (pgw::validation::is_valid_imsi(imsi)){
+        return m_blacklist.add(std::string(imsi));
+    }
+    return false;
 }
 
 SessionManager::CreateResult SessionManager::createSession(pgw::types::constImsi_t imsi){
