@@ -1,86 +1,64 @@
 # Исполнители тестов
 add_executable(
     test_config
-    unit/test_config.cpp
+    test_config.cpp
 )
 add_executable(
     test_logger
-    unit/test_logger.cpp
+    test_logger.cpp
 )
 add_executable(
     test_session_manager
-    unit/test_session_manager.cpp
+    test_session_manager.cpp
 )
 
 add_executable(
     test_udp_server
-    unit/test_udp_server.cpp
-)
-
-add_executable(
-    test_integration
-    integration/test_integration.cpp
+    test_udp_server.cpp
 )
 
 # Добавляем файлы, которые будем тестировать
 target_sources(
     test_config PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/config.cpp
 )
 target_sources(
     test_logger PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logger.cpp
 )
 target_sources(
     test_session_manager PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/SessionManager.cpp
 )
 target_sources(
     test_udp_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
-)
-target_sources(
-    test_integration PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriter.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/UdpServer.cpp
 )
 
 # Подключаем заголовочные файлы
 target_include_directories(
     test_config PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
+    ${CMAKE_SOURCE_DIR}/src/common
 )
 target_include_directories(
     test_logger PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/common
 )
 target_include_directories(
     test_session_manager PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
-    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces
+    # ОБЯЗАТЕЛЬНО! mocks подключать перед common (в нем лежит настоящая версия логгера, а в mock заглушка)
+    ${CMAKE_SOURCE_DIR}/tests/mocks
+    ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src/server
 )
 target_include_directories(
     test_udp_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
-    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
-)
-target_include_directories(
-    test_integration PRIVATE
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
+    ${CMAKE_SOURCE_DIR}/src/server/interfaces
+    # ОБЯЗАТЕЛЬНО! mocks подключать перед common (в нем лежит настоящая версия логгера, а в mock заглушка)
+    ${CMAKE_SOURCE_DIR}/tests/mocks
+    ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src/server
 )
 
 # Зависимости загруженны в главном CMakeList
@@ -98,25 +76,13 @@ target_link_libraries(
 )
 target_link_libraries(
     test_session_manager PRIVATE
-    pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     GTest::gmock        # Для mock
 )
 target_link_libraries(
     test_udp_server PRIVATE
-    pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     GTest::gmock        # Для mock
-)
-target_link_libraries(
-    test_integration PRIVATE
-    pgw_common
-    GTest::gtest
-    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
-    GTest::gmock        # Для mock
-    nlohmann_json::nlohmann_json
-    spdlog::spdlog
-    httplib::httplib
 )

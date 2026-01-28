@@ -3,266 +3,165 @@
 Упрощенная модель сетевого компонента PGW (Packet Gateway)
 
 ## Функционал
-- Event-driven архитектура на основе `poll()` без потоков для UDP
-- Graceful shutdown с контролируемой скоростью удаления сессий
-- HTTP API для мониторинга и управления
-- CDR журналирование операций с сессиями
-- Черный список** IMSI для отклонения запросов
-- Non-blocking UDP сервер** без таймера на ожидание данных
-- Конфигурация через JSON с валидацией
-- Логирование с поддержкой уровней
-
-## Требования
-- C++17 компилятор (g++, clang 6+)
-- CMake 3.15+
-- Linux (тестировано на Ubuntu 20.04+)
+- Управление сеансами UDP
+- HTTP API для мониторинга
+- Ведение журнала CDR
+- Корректное завершение работы
 
 ## Сборка
 ```bash
-git clone https://github.com/suaviludius/pgw-project.git
-cd pgw-project
-mkdir build && cd build
+mkdir build
+cd build
 cmake ..
 cmake --build . --config Release
 ```
 
-## Зависимости
-Все зависимости загружаются автоматически через CMake `FetchContent`:
-- nlohmann/json - парсинг JSON конфигурации
-- cpp-httplib - HTTP сервер
-- spdlog - логирование
-- googletest - unit тесты (только для тестов)
-
-## Конфигурация
-Примеры файлов конфигурации лежат в папке config:
-- Серверная конфигурация (`configs/pgw_server.json`)
-- Клиентская конфигурация (`configs/pgw_client.json`)
-
 ## Использование
-### Запуск сервера
-```bash
-# Запуск с конфигурацией по умолчанию
-./build/src/pgw_server
-# Запуск с указанием конфигурационного файла
-./build/src/pgw_server /path/to/config.json
-```
-### Запуск клиента
-```bash
-# Отправка одного IMSI
-./build/src/pgw_client 001010123456789
-# Использование конфигурационного файла
-./build/src/pgw_client config.json 001010123456789
-```
-### HTTP API
-```bash
-# Проверка статуса абонента
-curl "http://localhost:8080/check_subscriber?imsi=001010123456789"
-# Инициирование graceful shutdown
-curl -X POST http://localhost:8080/stop
-```
+Примеры файлов конфигурации в файле config
 
-## UDP протокол
-
-Формат запроса
-- IMSI: 15 цифр в кодировке ASCII (Пример: "`001010123456789`")
-
-Формат ответа
-- "`created`" - сессия создана
-- "`rejected`" - сессия отклонена (blacklist или уже существует)
-
-## UML диаграммы
-### Обработка UDP запроса
+## Диаграмма udp запроса
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant US as UdpServer
-    participant SM as SessionManager
-    participant CW as CdrWriter
+    participant Client
+    participant Server
+    participant SessionManager
+    participant CDRWriter
 
-    C->>US: 1: Запрос на создание сессии IMSI
-    activate US
-    US->>US: 2: Проверка правильности IMSI
-
-    Note over C,CW: Результат проверки IMSI
-    alt Неправильный
-        US-->>C: 3: Ответ: cессия rejected
-        deactivate US
-    else Правильный: Created
-        activate US
-        US->>SM: 3: Создание сессии для IMSI
-        activate SM
-        SM->>SM: 4: Проверка IMSI по черному списку
-        SM->>SM: 5: Проверка IMSI по активным сессиям
-        SM->>CW: 6: Запись CDR: time IMSI "created"
-        SM-->>US: 7: Результат создания сессии: CREATED
-        deactivate SM
-        US-->>C: 8: Ответ: cессия "created"
-        deactivate US
-    else Правильный: Rejected
-        activate US
-        US->>SM: 3: Создание сессии для IMSI
-        activate SM
-        SM->>SM: 4: Проверка IMSI по черному списку
-        SM->>SM: 5: Проверка IMSI по активным сессиям
-        SM->>CW: 6: Запись CDR: time IMSI "rejected"
-        SM-->>US: 7: Результат создания сессии: REJECTED
-        deactivate SM
-        US-->>C: 8: Ответ: cессия "rejected"
-        deactivate US
-    end
+    Client->>Server: UDP Packet(IMSI)
+    Server->>SessionManager: createSession(IMSI)
+    SessionManager-->>Server: CREATED/REJECTED
+    Server->>CDRWriter: writeRecord(IMSI, action)
+    Server-->>Client: "created"/"rejected"
 ```
 
-### Структура классов cервера
+## Структура классов
 ```mermaid
+---
+  config:
+    class:
+      hideEmptyMembersBox: true
+---
 classDiagram
-    class ISessionManager {
-        <<interface>>
-        +CreateResult : enum class
-        +hasSession(imsi : сonstImsi_t) bool
-        +createSession(imsi : сonstImsi_t) CreateResult
-        +countActiveSession() size_t
-    }
-    class SessionManager {
-        -m_cdrWriter : ICdrWriter&
-        -m_sessions : Container~unique_ptr~Session~~
-        -m_blacklist : const Blacklist&
-        -m_shutdownRate : const rate_t
-        -m_sessionTimeoutSec : const seconds_t
-        -findSession(imsi : constImsi_t) : iterator
-
-        +SessionManager(...)
-        +cleanTimeoutSessions() void
-        +gracefulShutdown() void
-        ...
-    }
-    class Session {
-        -m_imsi : imsi_t
-        -m_createdTime : time_point
-
-        +Session(imsi : constImsi_t)
-        +getImsi() constImsi_t
-        +getAge() seconds_t
+    class main {
+        <<function>>
+        Config config
+        SessionManager sessionManager
+        CdrWriter cdrWriter
+        UdpServer udpServer
+        HttpServer httpServer
     }
 
-    class ICdrWriter {
-        <<interface>>
-        +writeAction(imsi : сonstImsi_t, action : string_view) void
-    }
-    class CdrWriter {
-        -m_file : ofstream
-
-        +CdrWriter(filename : constFilePath_t)
-    }
-
-   class ISocket {
-        <<interface>>
-        +Packet : struct
-        +bind(ip : ip_t, port : port_t) void
-        +send(string data, sockaddr_in addr) void
-        +receive() Packet
-        +close() void
-        +getFd() int
-    }
-
-    class Socket {
-        -int m_fd
-
-        +Socket()
-    }
-
-    class UdpServer {
-        -m_sessionManager : ISessionManager&
-        -m_socket : unique_ptr~ISocket~
-        -m_ip : ip_t
-        -m_port : port_t
-
-        +UdpServer(...)
-        +start() void
-        +stop() void
-        +handler() void
-        +getFd() int
-        +validateImsi(imsi : const std::string&)
-    }
-
-    class HttpServer {
-        -Status : struct
-        -m_sessionManager : ISessionManager&
-        -m_server : unique_ptr~httplib::Server~
-        -m_port : port_t
-        -m_serverThread : thread
-        -m_shutdownRequest : atomic~bool~&
-
-        +HttpServer(...)
-        +start() void
-        +stop() void
-        +setRoutes() void
-        +handleSubscriberCheck(...) void
-        +handleShutdown(...) void
-    }
-
-    UdpServer *-->"1" ISessionManager : использует
-    UdpServer *-->"1" ISocket : содержит
-    Socket -->"1" ISocket : реализует
-
-    HttpServer *-->"1" ISessionManager : использует
-
-    SessionManager -->"1" ISessionManager : реализует
-    SessionManager *-->"1" ICdrWriter : использует
-    SessionManager *-->"0..*" Session : содержит
-    CdrWriter *-->"1" ICdrWriter : реализует
-```
-
-### Структура общих файлов
-```mermaid
-classDiagram
-    %% Глобальные зависимости
-    note "Общие зависимости всех классов:
-    1. Config - параметры инициализации
-    2. types - пространство имен с типами
-    3. logger - система логирования"
-
-        class Config {
-        -m_udpIp : ip_t
-        -m_udpPort : port_t
-        -m_sessionTimeoutSec : seconds_t
-        -m_cdrFile: filePath_t
-        -m_httpPort: port_t
-        -m_gracefulShutdownRate: rate_t
-        -m_logFile: filePath_t
-        -m_logLevel: logLevel_t
-        -m_blackList: Blacklist
+    class Config {
+        -m_udpIp: types::Ip
+        -m_udpPort: types::Port
+        -m_sessionTimeoutSec: types::Seconds
+        -m_cdrFile: types::FilePath
+        -m_httpPort: types::Port
+        -m_gracefulShutdownRate: types::Rate
+        -m_logFile: types::FilePath
+        -m_logLevel: types::LogLevel
+        -m_blackList: types::Blacklist
         -m_error: string
         -m_verification: bool
 
-        +Config(path : const string&)
-        +getters()
+        -readConfigFile(confPath: types::ConstFilePath)
+        -validateConfigData()
+        -setDefaultConfig()
+        +Config(configPath: types::ConstFilePath)
+        +getUdpIp(): types::Ip
+        +getUdpPort(): types::Port
+        +getSessionTimeoutSec(): types::Seconds
+        +getCdrFile(): types::FilePath
+        +getHttpPort(): types::Port
+        +getGracefulShutdownRate(): types::Rate
+        +getLogFile(): types::FilePath
+        +getLogLevel(): types::LogLevel
+        +getBlacklist(): types::Blacklist
+        +getError(): string_view
+        +isValid(): bool
     }
 
-    class logger {
-        <<singleton>>
-        +Макросы для логирования
-        +init(...)
-        +shutdown() void
-        +parse_level(string_view : level) level
-        +set_level(string_view : level) void
+    class UdpServer {
+
+    }
+
+    class HttpServer {
+
+    }
+
+    class SessionManager {
+        -m_blacklist: types::Blacklist
+        -m_sessionTimeoutSec: types::Seconds
+        -m_shutdownRate: types::Rate
+        -m_sessions: types::Container~unique_ptr~Session~~
+
+        -findSession(imsi: types::ConstImsi): iterator
+        -findSession(imsi: ConstImsi): const_iterator
+        +SessionManager(blacklist: types::Blacklist&, timeout: types::Seconds, rate: types::Rate)
+        +createSession(imsi: types::ConstImsi)
+        +removeSession(imsi: types::ConstImsi)
+        +gracefulShutdown(rate: types::Rate)
+        +cleanTimeoutSessions()
+        +hasSession(imsi: types::ConstImsi): bool
+        +getSessionCount(): size_t
+    }
+
+    class Session {
+
+    }
+
+    class CdrWriter {
+        -m_file : std::ofstream
+
+        +CdrWriter()
+        +~CdrWriter()
+        +writeAction()
+    }
+
+    class Logger {
+        -m_logger: shared_ptr<spdlog::logger>
+        -parse_level(level: types::LogLevel): spdlog::level::level_enum
+        +init(logFile: types::ConstFilePath, logLevel: types::LogLevel)
+        +trace(message: string_view)
+        +debug(message: string_view)
+        +info(message: string_view)
+        +warn(message: string_view)
+        +error(message: string_view)
+        +critical(message: string_view)
+        +session_created(imsi: string_view)
+        +session_rejected(imsi: string_view, reason: string_view)
+        +session_deleted(imsi: string_view)
+        +udp_request(imsi: string_view, response: string_view)
+        +http_request(endpoint: string_view, client_ip: string_view)
     }
 
     class types {
         <<namespace>>
-        ip_t = string
-        port_t = uint16_t
-        seconds_t = uint32_t
-        filePath_t = string
-        rate_t = int64_t
-        logLevel_t = string
+        Ip = string
+        Port = uint16_t
+        Seconds = uint32_t
+        FilePath = string
+        Rate = int64_t
+        LogLevel = string
 
-        constFilePath_t = string_view
-        constLogLevel_t = string_view
-        constImsi_t = string_view
-        constIp_t = string_view
+        ConstFilePath = string_view
+        ConstLogLevel = string_view
+        ConstImsi = string_view
+        ConstIp = string_view
 
         Container = std::unordered_set~~
         Blacklist = Container~ConstImsi~
     }
-```mermaid
 
+    main *-- "1" Config : создает
+    main *-- "1" SessionManager : создает
+    main *-- "1" UdpServer : создает
+    main *-- "1"HttpServer : создает
+    main *-- "1" CdrWriter  : создает
+    SessionManager *-- "0..*" Session : содержит
+    UdpServer "1" --> "1" SessionManager : использует
+    UdpServer "1" --> "1" CdrWriter : использует
+    HttpServer "1" --> "1" SessionManager : использует
+
+    ```
+    // dsds
