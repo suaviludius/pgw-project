@@ -5,10 +5,10 @@
 
 class ICdrWriter {
 public:
-    static constexpr std::string_view SESSION_CREATED = "SESSION_CREATED";
-    static constexpr std::string_view SESSION_DELETED = "SESSION_DELETED";
-    static constexpr std::string_view SESSION_REJECTED = "SESSION_REJECTED";
-    static constexpr std::string_view SESSION_ERROR = "SESSION_ERROR";
+    static constexpr std::string_view SESSION_CREATED = "CREATED";
+    static constexpr std::string_view SESSION_DELETED = "DELETED";
+    static constexpr std::string_view SESSION_REJECTED = "REJECTED";
+    static constexpr std::string_view SESSION_ERROR = "ERROR";
 
     virtual ~ICdrWriter() = default;
 
