@@ -36,7 +36,7 @@ public:
     pgw::types::rate_t getGracefulShutdownRate() const { return m_gracefulShutdownRate; }
     pgw::types::constFilePath_t getLogFile() const { return m_logFile; }
     pgw::types::constLogLevel_t getLogLevel() const { return m_logLevel; }
-    const auto& getBlacklist() const { return m_blackList; } // Длинный тип, поэтому auto
+    auto& getBlacklist() { return m_blackList; } // Длинный тип, поэтому auto
 
     std::string_view const getError(){ return m_error;}
     bool isValid(){ return m_verification;}

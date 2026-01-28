@@ -1,5 +1,6 @@
 #include "constants.h"
 #include "Config.h"
+#include "validation.h"
 
 #include <nlohmann/json.hpp>
 
@@ -52,36 +53,29 @@ void Config::readConfigFile(const std::string& configPath){
 void Config::validateConfigData(){
 
     // Валидация портов
-    if (m_udpPort == pgw::constants::validation::MIN_PORT ||
-        m_udpPort > pgw::constants::validation::MAX_PORT) {
+    if (!pgw::validation::is_valid_port(m_udpPort)) {
         throw std::runtime_error("Invalid UDP port: " +
               std::to_string(m_udpPort));
     }
 
-    if (m_httpPort == pgw::constants::validation::MIN_PORT ||
-        m_httpPort > pgw::constants::validation::MAX_PORT) {
+    if (!pgw::validation::is_valid_port(m_httpPort)) {
         throw std::runtime_error("Invalid HTTP port: " +
               std::to_string(m_httpPort));
     }
 
-    // Валидация таймаутов и лимитов
-    if (m_sessionTimeoutSec <= pgw::constants::validation::MIN_SESSION_TIMEOUT) {
-        throw std::runtime_error("Session timeout must be greater than " +
-              std::to_string(pgw::constants::validation::MIN_SESSION_TIMEOUT) +
-              " seconds");
+    if (!pgw::validation::is_valid_session_timeout(m_sessionTimeoutSec)) {
+        throw std::runtime_error("Invalid session timeout: " +
+              std::to_string(m_sessionTimeoutSec));
     }
 
-    if (m_gracefulShutdownRate <= pgw::constants::validation::MIN_GRACEFUL_SHUTDOWN_RATE) {
-        throw std::runtime_error("Graceful shutdown rate must be greater than " +
-              std::to_string(pgw::constants::validation::MIN_GRACEFUL_SHUTDOWN_RATE) +
-              " seconds");
+    if (!pgw::validation::is_valid_graceful_shutdown_rate(m_gracefulShutdownRate)) {
+        throw std::runtime_error("Invalid shutdown rate: " +
+              std::to_string(m_gracefulShutdownRate));
     }
 
     // Валидация IMSI в blackList
-    for (const auto& imsi : m_blackList) {
-        if (imsi.size() != pgw::constants::validation::IMSI_SIZE) {
-            throw std::runtime_error("Invalid IMSI in blacklist: " + static_cast<std::string>(imsi));
-        }
+    if (!pgw::validation::is_valid_blacklist(m_blackList)) {
+        throw std::runtime_error("Invalid IMSI in blacklist");
     }
 }
 
