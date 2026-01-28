@@ -16,9 +16,6 @@ private:
     // Максимальный размер принимаемого UDP пакета
     static constexpr uint32_t MAX_DATAGRAM_SIZE = 1500;
 
-    // Максимальная длина IMSI
-    static constexpr size_t MAX_IMSI_LENGTH = 15;
-
     // Ссылка на менеджер сессий (ассоциация)
     ISessionManager& m_sessionManager;
 

@@ -1,8 +1,8 @@
 #include "UdpServer.h"
 #include "Socket.h"
 #include "logger.h"
+#include "validation.h"
 
-#include <algorithm> // all_of()
 #include <cstring>
 
 
@@ -11,8 +11,9 @@ UdpServer::UdpServer(ISessionManager& sessionManager,
                      pgw::types::port_t port,
                      std::unique_ptr<ISocket> socket)
 try : m_sessionManager{sessionManager},
-      m_socket{socket ? std::move(socket) : std::make_unique<Socket>()}, // Если прийдет пустой указатель, то создаем соккет сами, иначе перемещаем
-      //m_socket{std::move(socket)}, // Для тестов (закоментировать строку выше)
+      // Если прийдет пустой указатель, то создаем соккет сами, иначе перемещаем
+      m_socket{socket ? std::move(socket) : std::make_unique<Socket>()},
+      //m_socket{std::move(socket)}, // Для тестов можно использовать этот вариант
       m_ip{ip},
       m_port{port},
       m_running{false}{
@@ -25,7 +26,9 @@ catch(const std::exception& e){
 }
 
 UdpServer::~UdpServer(){
-    stop();
+    if(m_running){
+        stop();
+    }
     LOG_INFO("UDP server deleted");
 }
 
@@ -50,10 +53,7 @@ void UdpServer::start(){
 }
 
 void UdpServer::stop(){
-    if(!m_running) {
-        LOG_INFO("UDP server already stopped");
-    }
-    else{
+    if(m_running) {
         m_running = false;
         LOG_INFO("UDP server stopped");
     }
@@ -100,12 +100,8 @@ void UdpServer::handler(){
 }
 
 bool UdpServer::validateImsi(const std::string& imsi){
-    if (imsi.length() != MAX_IMSI_LENGTH) {
-        LOG_WARN("UDP server receive imsi whith invalid size: {} ", imsi);
-        return false;
-    }
-    if (!std::all_of(imsi.begin(), imsi.end(), ::isdigit)) {
-        LOG_WARN("UDP server receive imsi whith invalid symbols: {}", imsi);
+    if (!pgw::validation::is_valid_imsi(imsi)) {
+        LOG_WARN("UDP server receive invalid imsi: ", imsi);
         return false;
     }
     return true;
