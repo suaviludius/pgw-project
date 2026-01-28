@@ -67,7 +67,7 @@ TEST_F(ConfigTest, SuccessfulReading) {
     createTestConfig( R"({
             "udp_ip": "10.0.0.0",
             "udp_port": 12345,
-            "http_port": 15,
+            "http_port": 1555,
             "session_timeout_sec": 80,
             "cdr_file": "file1.log",
             "graceful_shutdown_rate": 5,
@@ -81,10 +81,12 @@ TEST_F(ConfigTest, SuccessfulReading) {
         // Act
         pgw::server::Config config(CONFIG_FILE);
 
+        std::cout << config.getError();
+
         // Assert
         EXPECT_EQ(config.getUdpIp(), "10.0.0.0");
         EXPECT_EQ(config.getUdpPort(), 12345);
-        EXPECT_EQ(config.getHttpPort(), 15);
+        EXPECT_EQ(config.getHttpPort(), 1555);
         EXPECT_EQ(config.getSessionTimeoutSec(), 80);
         EXPECT_EQ(config.getCdrFile(), "file1.log");
         EXPECT_EQ(config.getGracefulShutdownRate(), 5);
@@ -93,6 +95,7 @@ TEST_F(ConfigTest, SuccessfulReading) {
         EXPECT_TRUE(config.getBlacklist().contains("012340123401234"));
         EXPECT_TRUE(config.getBlacklist().contains("000111222333444"));
     });
+
 }
 
 TEST_F(ConfigTest, UsesDefaultValues) {
