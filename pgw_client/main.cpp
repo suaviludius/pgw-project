@@ -18,6 +18,7 @@ int main(int argc, char* argv[]){
         if (argc == 2) {
             // Только IMSI: ./pgw_client 001010123456789
             imsi = argv[1];
+
         } else if (argc == 3) {
             // Только JSON + IMSI: ./pgw_client config.json 001010123456789
             configPath = argv[1];
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]){
         pgw::client::Config config(configPath);
 
         // Инициализируем логгер параметрами из конфиг файла
-        logger::init(
+        pgw::logger::init(
             config.getLogFile(),
             config.getLogLevel()
         );
@@ -62,10 +63,10 @@ int main(int argc, char* argv[]){
         LOG_INFO("Client socket closed");
     }
     catch(const std::exception& e){
-        if(logger::isInit){
+        if(pgw::logger::isInit){
             // Критическая ошибка при выполнении
             LOG_CRITICAL("Fatal error: {}", e.what());
-            logger::shutdown();
+            pgw::logger::shutdown();
         }
         else {
             // Логгер не инициализирован - вывод в stderr

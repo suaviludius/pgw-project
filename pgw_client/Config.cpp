@@ -1,5 +1,6 @@
 #include "constants.h"
 #include "Config.h"
+#include "validation.h"
 
 #include <nlohmann/json.hpp>
 
@@ -43,8 +44,7 @@ void Config::readConfigFile(const std::string& configPath){
 
 void Config::validateConfigData(){
     // Валидация портов
-    if (m_serverPort == pgw::constants::validation::MIN_PORT ||
-        m_serverPort > pgw::constants::validation::MAX_PORT) {
+    if(!pgw::validation::is_valid_port(m_serverPort)){
         throw std::runtime_error("Invalid UDP port: " +
               std::to_string(m_serverPort));
     }
