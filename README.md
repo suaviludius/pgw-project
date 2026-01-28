@@ -7,8 +7,8 @@
 - Graceful shutdown с контролируемой скоростью удаления сессий
 - HTTP API для мониторинга и управления
 - CDR журналирование операций с сессиями
-- Черный список** IMSI для отклонения запросов
-- Non-blocking UDP сервер** без таймера на ожидание данных
+- Черный список IMSI для отклонения запросов
+- Non-blocking UDP сервер без таймера на ожидание данных
 - Конфигурация через JSON с валидацией
 - Логирование с поддержкой уровней
 
@@ -59,6 +59,17 @@ cmake --build . --config Release
 curl "http://localhost:8080/check_subscriber?imsi=001010123456789"
 # Инициирование graceful shutdown
 curl -X POST http://localhost:8080/stop
+```
+### Make команды
+```bash
+make            - Собрать проект (Release)
+make configure  - Собрать конфигурацию CMake
+make server     - Запустить сервер
+make client     - Запустить клиент
+make test       - Запустить тесты
+make clean      - Удалить build директорию
+make rebuild    - Полная пересборка
+make help       - Показать эту справку
 ```
 
 ## UDP протокол
@@ -211,58 +222,4 @@ classDiagram
     SessionManager *-->"0..*" Session : содержит
     CdrWriter *-->"1" ICdrWriter : реализует
 ```
-
-### Структура общих файлов
-```mermaid
-classDiagram
-    %% Глобальные зависимости
-    note "Общие зависимости всех классов:
-    1. Config - параметры инициализации
-    2. types - пространство имен с типами
-    3. logger - система логирования"
-
-        class Config {
-        -m_udpIp : ip_t
-        -m_udpPort : port_t
-        -m_sessionTimeoutSec : seconds_t
-        -m_cdrFile: filePath_t
-        -m_httpPort: port_t
-        -m_gracefulShutdownRate: rate_t
-        -m_logFile: filePath_t
-        -m_logLevel: logLevel_t
-        -m_blackList: Blacklist
-        -m_error: string
-        -m_verification: bool
-
-        +Config(path : const string&)
-        +getters()
-    }
-
-    class logger {
-        <<singleton>>
-        +Макросы для логирования
-        +init(...)
-        +shutdown() void
-        +parse_level(string_view : level) level
-        +set_level(string_view : level) void
-    }
-
-    class types {
-        <<namespace>>
-        ip_t = string
-        port_t = uint16_t
-        seconds_t = uint32_t
-        filePath_t = string
-        rate_t = int64_t
-        logLevel_t = string
-
-        constFilePath_t = string_view
-        constLogLevel_t = string_view
-        constImsi_t = string_view
-        constIp_t = string_view
-
-        Container = std::unordered_set~~
-        Blacklist = Container~ConstImsi~
-    }
-```mermaid
 
