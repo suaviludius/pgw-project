@@ -14,6 +14,11 @@ public:
         ALREADY_EXISTS,
         ERROR
     };
+    // Вот тут стоило бы использовать такое:
+    // using SessionId = IMSI?. Это будет ключ.
+    // using SessionPtr = std::unique_ptr<Session>;
+    // using Sessions = std::unordered_map<SessionId, SessionPtr>.
+    // Теперь у тебя нет лишнего самописного контейнера, поиск сессии по контейнеру O(1) апроксимировано
     using sessions = pgw::types::Container<std::unique_ptr<Session>>;
 
 private:
@@ -22,6 +27,8 @@ private:
     pgw::types::Rate m_shutdownRate;
     sessions m_sessions; // RAII, поэтому используем умные указатели
 
+    // Затем всё это заменилось бы на ф-цию
+    // SessionPtr findSession(pgw::types::ConstImsi imsi);
     sessions::iterator findSession(pgw::types::ConstImsi imsi); // Для внутренних методов auto можно использовать
     sessions::const_iterator findSession(pgw::types::ConstImsi imsi) const; // версия для константных методов
 public:

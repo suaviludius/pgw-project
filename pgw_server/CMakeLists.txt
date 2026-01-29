@@ -2,6 +2,13 @@ add_executable(pgw_server
     main.cpp
 )
 
+# исправляем то, что бинари не в папке bin
+set_target_properties(pgw_server PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
+)
+
 target_sources(
     pgw_server PRIVATE
     Config.cpp

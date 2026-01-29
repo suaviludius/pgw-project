@@ -41,3 +41,6 @@ namespace validation {
 } // namespace pgw
 
 #endif // PGW_CONSTANTS_H
+// Обязательно чтобы в конце всех файлов была пустая строка, гит тебе в пул-реквестах будет здесь подсвечивать
+// \no newline at end of file. Это штука желательно для корректной работы самого гита
+// Это настраивается прямо в IDE можешь открыть Ctrl+Shift+P > Insert Final Newline

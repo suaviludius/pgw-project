@@ -2,6 +2,13 @@ add_executable(pgw_client
     main.cpp
 )
 
+# путь для этого конкретного файла
+set_target_properties(pgw_client PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
+)
+
 target_sources(
     pgw_client PRIVATE
     Config.cpp

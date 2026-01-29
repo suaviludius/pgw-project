@@ -11,6 +11,8 @@
 //  В случае замены типа std::string на иной, необходимо также изменить
 //  тип в файле constants.h на соответсвтующий.
 
+
+
 namespace pgw::types {
     using Port = uint16_t;          // 0-65535 - достаточно uint16_t
     using Ip = std::string;
@@ -23,9 +25,15 @@ namespace pgw::types {
     using ConstIp = std::string_view;
     using ConstFilePath = std::string_view;
     using ConstLogLevel = std::string_view;
-    using ConstImsi = std::string_view;
+    using ConstImsi = std::string_view;     // ОЧЕНЬ ОЧЕНЬ длинная цепочка namespace. Неудобно использовать при написании кода
+
+    // IMSI это часть твоего pgw которая везде используется. Вот и пусть она была бы pgw::imsi
 
     // Для sessions и blacklist сделаем свой тип, чтобы иметь удобный интерфейс
+
+
+    // Я СОШЁЛ С УМА? Я же это уже всё видел...
+// ДУБЛИКАТ!
     template <typename T>
     class Container {
     public:

@@ -4,6 +4,7 @@
 #include "types.h"
 #include <string_view>
 
+// У тебя же уже есть файл include/constants.h. зачем тебе ещё один?
 namespace pgw::constants {
     namespace defaults {
         inline constexpr pgw::types::ConstIp UDP_IP {"0.0.0.0"};

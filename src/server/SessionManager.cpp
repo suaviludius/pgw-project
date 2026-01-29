@@ -18,6 +18,11 @@ SessionManager::~SessionManager(){
     Logger::info("Session Manager deleted");
 }
 
+// ужас. вот тебе и unordered_set. Ты этими методами убил поиск за О(1), сразу превратив его в О(n).
+// Выбрать правильный контейнер - вот что связывает отличного инженера, dev-ops'а и бомжа!
+
+// Используя здесь std::unordered_map ты бы сразу здесь убрал все эти недостатки и не писал бы лишний код std::find_if
+
 SessionManager::sessions::iterator SessionManager::findSession(pgw::types::ConstImsi imsi) {
     return std::find_if(m_sessions.begin(),m_sessions.end(), // Ищем среди активных сессий imsi пришедшей
     [&imsi](const auto& session){
@@ -64,6 +69,20 @@ SessionManager::CreateResult SessionManager::createSession(pgw::types::ConstImsi
 
 void SessionManager::removeSession(pgw::types::ConstImsi imsi){
     auto it {findSession(imsi)};
+    // фу, нет. здесь лучше не юзать uniform {}. const auto it = findSession(imsi);
+    // Плюс. Опять же. Выбери ты правильный контейнер и напиши правильно код findSession здесь было бы так
+
+    /*
+        const auto session = findSession(imsi);
+        if (!session) {
+            LOG
+            return;
+        }
+
+        m_sessions.erase(session->imsi())  // Это если у нас m_sessions = std::unordered_map<SessionId, SessionPtr>
+        LOG
+    */
+
     if (it != m_sessions.end()){
         m_sessions.erase(it);
         Logger::session_deleted(imsi);
@@ -85,12 +104,14 @@ void SessionManager::cleanTimeoutSessions(){
     }
 }
 
-void SessionManager::gracefulShutdown(pgw::types::Rate rate){
+void SessionManager::gracefulShutdown(pgw::types::Rate rate){ // GRACEFUL IDEA
     Logger::info("Sessions graceful shutdown start");
     auto it {m_sessions.begin()};
+    // Декремент в условии?? Плохй стиль!
     while ((it != m_sessions.end()) && (rate-- > 0)) {
         auto imsi {(*it)->getImsi()};  // erase делает текущий it невалидным, поэтому сохраняем
         // Задержка для контроля скорости
+        // Т.е если сессия молодая, то мы здесь должны сидеть и ждать её до посинения и блокировать все остальныЕ??????
         while ((*it)->getAge() < m_sessionTimeoutSec) {
             std::this_thread::sleep_for(std::chrono::milliseconds(m_sessionTimeoutSec));
         }
