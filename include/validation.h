@@ -9,7 +9,8 @@
 namespace pgw{
 namespace validation{
 
-inline bool is_valid_port(pgw::types::port_t port) {
+// Пляшет cod-style. то ф-ции в camelCase, теперь в snake_case
+inline bool is_valid_port(pgw::types::port_t port) { 
     return port > pgw::constants::validation::MIN_PORT &&
            port <= pgw::constants::validation::MAX_PORT;
 }
@@ -33,7 +34,8 @@ inline bool is_valid_graceful_shutdown_rate(pgw::types::rate_t rate) {
 }
 
 inline bool is_valid_blacklist(const pgw::types::Blacklist& blacklist) {
-    for (const auto& imsi : blacklist) {
+    // range-based - уважаемо. range-based с правильными модификаторами const auto& - вдвойне
+    for (const auto& imsi : blacklist) { 
         if (!is_valid_imsi(imsi)) {
             return false;
         }

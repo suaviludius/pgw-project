@@ -5,6 +5,7 @@
 #include "types.h"
 
 class Config{
+// лучше явно объявлять private: секцию для наглядности
     pgw::types::Ip m_udpIp{};
     pgw::types::Port m_udpPort{};
     pgw::types::Seconds m_sessionTimeoutSec{};

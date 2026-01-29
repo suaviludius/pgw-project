@@ -1,12 +1,10 @@
-#ifndef I_SOCKET_H
-#define I_SOCKET_H
+#pragma once // 21 век, больше никаких ifdef, только #pragma once
 
-#include "types.h"
+#include "types.h" // Крутое разделение на "свои" файлы и общие!
 
 #include <netinet/in.h> // Структуры сокетов для Unix систем
 
-class ISocket {
-public:
+struct ISocket { // Интерфейсы должны быть как struct. Не придётся писать public здесь и при наследовании
     struct Packet{
         std::string data;       // Пришедшие данные
         sockaddr_in senderAddr; // Адрес отправителя (также адрес назначения при отправке)
@@ -24,5 +22,3 @@ public:
     virtual const sockaddr_in& getAddr() const = 0;
     virtual std::string addrToString(const sockaddr_in& addr) = 0; // Из sockaddr_in делает string c ip:port
 };
-
-#endif // I_SOCKET_H
