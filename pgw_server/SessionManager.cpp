@@ -26,31 +26,19 @@ size_t SessionManager::countActiveSession() const {
     return m_sessions.size();
 }
 
-SessionManager::sessions::iterator SessionManager::findSession(pgw::types::constImsi_t imsi) {
-    return std::find_if(m_sessions.begin(),m_sessions.end(),
-         // Ищем совпадения по imsi среди активных сессий
-        [&imsi](const auto& session){
-            return session->getImsi() == imsi;
-        });
-}
-
-bool SessionManager::hasSession(pgw::types::constImsi_t imsi) const {
-    return std::find_if(m_sessions.begin(),m_sessions.end(),
-        // Ищем совпадения по imsi среди активных сессий
-        [&imsi](const auto& session){
-            return session->getImsi() == imsi;
-        }) != m_sessions.end();
-}
-
-bool SessionManager::addToBlacklist(pgw::types::constImsi_t imsi) {
+bool SessionManager::addToBlacklist(const pgw::types::imsi_t& imsi) {
     if (pgw::validation::is_valid_imsi(imsi)){
-        return m_blacklist.add(std::string(imsi));
+        return m_blacklist.insert(imsi).second;
     }
     return false;
 }
 
-SessionManager::CreateResult SessionManager::createSession(pgw::types::constImsi_t imsi){
-    if(m_blacklist.contains(std::string(imsi))){
+bool SessionManager::hasSession(const pgw::types::imsi_t& imsi) const {
+    return m_sessions.find(imsi) != m_sessions.end();
+}
+
+SessionManager::CreateResult SessionManager::createSession(const pgw::types::imsi_t& imsi){
+    if(m_blacklist.find(imsi) != m_blacklist.end()){
         m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_REJECTED);
         LOG_WARN("Session rejected (blacklisted) for IMSI: {}" , imsi);
         return CreateResult::REJECTED_BLACKLIST;
@@ -62,11 +50,13 @@ SessionManager::CreateResult SessionManager::createSession(pgw::types::constImsi
     }
 
     try {
-        // Создаём новую сессию через unique_ptr
-        auto session {std::make_unique<Session>(imsi)};
-
-        // Перемещаем сессию в контейнер и принимаем успех операции
-        bool inserted {m_sessions.add(std::move(session))};
+        // Создаём новую сессию и пытаемся сделать ход имплейсом
+        auto [it, inserted] = m_sessions.try_emplace(
+            imsi,                                   // ключ
+            SessionData{                            // значение
+                std::chrono::steady_clock::now()    // createdTime
+            }
+        );
 
         if(inserted){
             m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_CREATED);
@@ -85,8 +75,9 @@ SessionManager::CreateResult SessionManager::createSession(pgw::types::constImsi
     }
 }
 
-void SessionManager::terminateSession(pgw::types::constImsi_t imsi){
-    auto it = findSession(imsi);
+void SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
+    // Ищем сессию в мапе
+    auto it = m_sessions.find(imsi);
 
     // Удаляем сессию, если итератор на сессию находится в пределах контейнера
     if (it != m_sessions.end()){
@@ -99,17 +90,23 @@ void SessionManager::terminateSession(pgw::types::constImsi_t imsi){
 }
 
 void SessionManager::cleanTimeoutSessions(){
-    auto it {m_sessions.begin()};
+    // Тип часов для измерения интервалов времени
+    auto now = std::chrono::steady_clock::now();
+
+    auto it = m_sessions.begin();
 
     while (it != m_sessions.end()) {
-        if ((*it)->getAge() >= m_sessionTimeoutSec) {
-            auto imsi {(*it)->getImsi()};   // erase делает текущий it невалидным, поэтому сохраняем
-            it = m_sessions.erase(it);      // erase возвращает следующий валидный итератор
+        auto age = now - it->second.createdTime;
+
+        if (age >= m_sessionTimeoutSec) {
+            auto imsi = it->first;      // Сохраняем IMSI перед удалением;   // erase делает текущий it невалидным, поэтому сохраняем
+            it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
             m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
             LOG_INFO("SESSION_DELETED imsi: {}",imsi);
         } else {
             ++it;
         }
+
     }
 }
 
@@ -125,13 +122,14 @@ void SessionManager::gracefulShutdown(){
     auto it {m_sessions.begin()};
 
     while (it != m_sessions.end()) {
-        auto imsi {(*it)->getImsi()};
+        auto imsi = it->first;  // Сохраняем IMSI перед удалением
 
         // Начало отсчета для создания задержки
         auto now = std::chrono::steady_clock::now();
 
         // Создаем задержку между удалениями сессий
         auto timeSinceLastDeletion = now - lastDeletionTime;
+
         if (timeSinceLastDeletion < delayBetweenSessions) {
             // Приводим временной интервал к нужному размеру
             auto calculatedDelay = delayBetweenSessions - timeSinceLastDeletion;

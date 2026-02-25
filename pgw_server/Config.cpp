@@ -36,7 +36,9 @@ void Config::readConfigFile(const std::string& configPath){
     // Присваиваем значения полям конфигурации значениями из файла
     m_udpIp = jsonConfig.value("udp_ip", pgw::constants::server::defaults::UDP_IP); // UdpIp - имя ключа, 0.0.0.0 - значение по умолчанию
     m_udpPort = jsonConfig.value("udp_port", pgw::constants::server::defaults::UDP_PORT);
-    m_sessionTimeoutSec = jsonConfig.value("session_timeout_sec", pgw::constants::server::defaults::TIMEOUT_SEC);
+    int timeoutSec = jsonConfig.value("session_timeout_sec",
+        pgw::constants::server::defaults::TIMEOUT_SEC);
+    m_sessionTimeoutSec = std::chrono::seconds(timeoutSec);
     m_cdrFile = jsonConfig.value("cdr_file",pgw::constants::server::defaults::CDR_FILE);
     m_httpPort = jsonConfig.value("http_port",pgw::constants::server::defaults::HTTP_PORT);
     m_gracefulShutdownRate = jsonConfig.value("graceful_shutdown_rate",pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE);
@@ -45,7 +47,7 @@ void Config::readConfigFile(const std::string& configPath){
 
     if(jsonConfig.contains("blacklist") && jsonConfig["blacklist"].is_array()){
         for (const auto& imsi : jsonConfig["blacklist"]) { // Проходим по всем JSON ОБЪЕКТАМ (не строкам) из "blacklist"
-            m_blackList.add(imsi.get<pgw::types::imsi_t>());
+            m_blackList.insert(imsi.get<pgw::types::imsi_t>());
         }
     }
 }
@@ -65,7 +67,7 @@ void Config::validateConfigData(){
 
     if (!pgw::validation::is_valid_session_timeout(m_sessionTimeoutSec)) {
         throw std::runtime_error("Invalid session timeout: " +
-              std::to_string(m_sessionTimeoutSec));
+              std::to_string(m_sessionTimeoutSec.count()));
     }
 
     if (!pgw::validation::is_valid_graceful_shutdown_rate(m_gracefulShutdownRate)) {
@@ -82,7 +84,7 @@ void Config::validateConfigData(){
 void Config::setDefaultConfig() {
     m_udpIp = pgw::constants::server::defaults::UDP_IP;
     m_udpPort = pgw::constants::server::defaults::UDP_PORT;
-    m_sessionTimeoutSec = pgw::constants::server::defaults::TIMEOUT_SEC;
+    m_sessionTimeoutSec = std::chrono::seconds(pgw::constants::server::defaults::TIMEOUT_SEC);
     m_cdrFile = pgw::constants::server::defaults::CDR_FILE;
     m_httpPort = pgw::constants::server::defaults::HTTP_PORT;
     m_gracefulShutdownRate = pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE;
