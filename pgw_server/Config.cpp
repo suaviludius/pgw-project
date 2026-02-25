@@ -55,28 +55,28 @@ void Config::readConfigFile(const std::string& configPath){
 void Config::validateConfigData(){
 
     // Валидация портов
-    if (!pgw::validation::is_valid_port(m_udpPort)) {
+    if (!pgw::validation::isValidPort(m_udpPort)) {
         throw std::runtime_error("Invalid UDP port: " +
               std::to_string(m_udpPort));
     }
 
-    if (!pgw::validation::is_valid_port(m_httpPort)) {
+    if (!pgw::validation::isValidPort(m_httpPort)) {
         throw std::runtime_error("Invalid HTTP port: " +
               std::to_string(m_httpPort));
     }
 
-    if (!pgw::validation::is_valid_session_timeout(m_sessionTimeoutSec)) {
+    if (!pgw::validation::isValidSessionTimeout(m_sessionTimeoutSec)) {
         throw std::runtime_error("Invalid session timeout: " +
               std::to_string(m_sessionTimeoutSec.count()));
     }
 
-    if (!pgw::validation::is_valid_graceful_shutdown_rate(m_gracefulShutdownRate)) {
+    if (!pgw::validation::isValidGracefulShutdownRate(m_gracefulShutdownRate)) {
         throw std::runtime_error("Invalid shutdown rate: " +
               std::to_string(m_gracefulShutdownRate));
     }
 
     // Валидация IMSI в blackList
-    if (!pgw::validation::is_valid_blacklist(m_blackList)) {
+    if (!pgw::validation::isValidBlacklist(m_blackList)) {
         throw std::runtime_error("Invalid IMSI in blacklist");
     }
 }

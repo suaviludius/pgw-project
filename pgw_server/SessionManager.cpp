@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <thread>
 
+namespace pgw {
+
 SessionManager::SessionManager(
     ICdrWriter& cdrWriter,
     pgw::types::Blacklist& blacklist,
@@ -27,7 +29,7 @@ size_t SessionManager::countActiveSession() const {
 }
 
 bool SessionManager::addToBlacklist(const pgw::types::imsi_t& imsi) {
-    if (pgw::validation::is_valid_imsi(imsi)){
+    if (pgw::validation::isValidImsi(imsi)){
         return m_blacklist.insert(imsi).second;
     }
     return false;
@@ -149,3 +151,5 @@ void SessionManager::gracefulShutdown(){
         LOG_INFO("Sessions graceful shutdown error");
     }
 }
+
+} // namespace pgw
