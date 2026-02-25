@@ -42,7 +42,7 @@ TEST_F(UdpServerTest, StartUdpServer){
 
     // Создаем сервер через конструктор с сокетом
     EXPECT_NO_THROW({
-        UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
+        pgw::UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
         // Act
         server.start();
         // Assert
@@ -55,7 +55,7 @@ TEST_F(UdpServerTest, StartUdpServer){
 }
 
 TEST_F(UdpServerTest, ValidateImsi) {
-    UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
 
     // Корректные IMSI
     EXPECT_TRUE(server.validateImsi(IMSI1));
@@ -98,7 +98,7 @@ TEST_F(UdpServerTest, RunWithValidImsi){
         .Times(1); // Ожидаем вызов send() с параметрами created и ADDR
 
     // Создаем сервер
-    UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
     // Act
     server.start();
     server.handler();
@@ -125,7 +125,7 @@ TEST_F(UdpServerTest, RunWithInvalidImsi) {
         .Times(1); // Ожидаем вызов send() с параметрами created и ADDR
 
     // Создаем сервер
-    UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
     // Act
     server.start();
     server.handler();
@@ -153,7 +153,7 @@ TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
         .Times(1); // Ожидаем вызов send() с параметрами created и ADDR
 
     // Создаем сервер
-    UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
     // Act
     server.start();
     server.handler();
@@ -183,7 +183,7 @@ TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
 
 
     // Создаем сервер
-    UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
     // Act
     server.start();
     server.handler();
@@ -200,7 +200,7 @@ TEST_F(UdpServerTest, RunWithoutThrows) {
         .WillOnce(testing::Throw(std::runtime_error("Network error")));
 
     // Создаем сервер
-    UdpServer server(*mockSessionManager,  "127.0.0.1", 8080, std::move(mockSocket));
+    pgw::UdpServer server(*mockSessionManager,  "127.0.0.1", 8080, std::move(mockSocket));
     // Act
     server.start();
     // Assert

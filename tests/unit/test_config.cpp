@@ -87,13 +87,13 @@ TEST_F(ConfigTest, SuccessfulReading) {
         EXPECT_EQ(config.getUdpIp(), "10.0.0.0");
         EXPECT_EQ(config.getUdpPort(), 12345);
         EXPECT_EQ(config.getHttpPort(), 1555);
-        EXPECT_EQ(config.getSessionTimeoutSec(), 80);
+        EXPECT_EQ(config.getSessionTimeoutSec().count(), 80);
         EXPECT_EQ(config.getCdrFile(), "file1.log");
         EXPECT_EQ(config.getGracefulShutdownRate(), 5);
         EXPECT_EQ(config.getLogFile(), "file2.log");
         EXPECT_EQ(config.getLogLevel(), "DEBUG");
-        EXPECT_TRUE(config.getBlacklist().contains("012340123401234"));
-        EXPECT_TRUE(config.getBlacklist().contains("000111222333444"));
+        EXPECT_NE(config.getBlacklist().find("012340123401234"), config.getBlacklist().end());
+        EXPECT_NE(config.getBlacklist().find("000111222333444"), config.getBlacklist().end());
     });
 
 }
@@ -111,7 +111,7 @@ TEST_F(ConfigTest, UsesDefaultValues) {
         EXPECT_EQ(config.getUdpIp(), pgw::constants::server::defaults::UDP_IP);
         EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
         EXPECT_EQ(config.getHttpPort(), pgw::constants::server::defaults::HTTP_PORT);
-        EXPECT_EQ(config.getSessionTimeoutSec(), pgw::constants::server::defaults::TIMEOUT_SEC);
+        EXPECT_EQ(config.getSessionTimeoutSec().count(), pgw::constants::server::defaults::TIMEOUT_SEC);
         EXPECT_EQ(config.getCdrFile(), pgw::constants::server::defaults::CDR_FILE);
         EXPECT_EQ(config.getGracefulShutdownRate(), pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE);
         EXPECT_EQ(config.getLogFile(), pgw::constants::server::defaults::LOG_FILE);

@@ -21,7 +21,7 @@ namespace server::defaults {
     inline constexpr pgw::types::port_t UDP_PORT {9000};
     inline constexpr pgw::types::port_t HTTP_PORT {8080};
 
-    inline constexpr pgw::types::seconds_t TIMEOUT_SEC {30};
+    inline constexpr uint64_t TIMEOUT_SEC {30};
     inline constexpr pgw::types::rate_t GRACEFUL_SHUTDOWN_RATE {10};
 
     inline constexpr pgw::types::constFilePath_t CDR_FILE {"cdr.log"};

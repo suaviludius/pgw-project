@@ -9,12 +9,12 @@
 namespace pgw{
 namespace validation{
 
-inline bool is_valid_port(pgw::types::port_t port) {
+inline bool isValidPort(pgw::types::port_t port) {
     return port > pgw::constants::validation::MIN_PORT &&
            port <= pgw::constants::validation::MAX_PORT;
 }
 
-inline bool is_valid_imsi(pgw::types::constImsi_t imsi) {
+inline bool isValidImsi(pgw::types::constImsi_t imsi) {
     if (imsi.length() != pgw::constants::validation::IMSI_LENGTH) {
         return false;
     }
@@ -24,17 +24,17 @@ inline bool is_valid_imsi(pgw::types::constImsi_t imsi) {
     return true;
 }
 
-inline bool is_valid_session_timeout(pgw::types::seconds_t timeout) {
+inline bool isValidSessionTimeout(pgw::types::seconds_t timeout) {
     return timeout > constants::validation::MIN_SESSION_TIMEOUT;
 }
 
-inline bool is_valid_graceful_shutdown_rate(pgw::types::rate_t rate) {
+inline bool isValidGracefulShutdownRate(pgw::types::rate_t rate) {
     return rate > constants::validation::MIN_GRACEFUL_SHUTDOWN_RATE;
 }
 
-inline bool is_valid_blacklist(const pgw::types::Blacklist& blacklist) {
+inline bool isValidBlacklist(const pgw::types::Blacklist& blacklist) {
     for (const auto& imsi : blacklist) {
-        if (!is_valid_imsi(imsi)) {
+        if (!isValidImsi(imsi)) {
             return false;
         }
     }

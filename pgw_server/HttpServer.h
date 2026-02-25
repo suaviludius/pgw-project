@@ -16,6 +16,8 @@
 // Предоставляет REST API для проверки статуса абонентов
 // и shutdown всей программы
 
+namespace pgw {
+
 class HttpServer{
 private:
     // HTTP коды статусов
@@ -89,5 +91,7 @@ public:
     // Обрабатывает запрос graceful shutdown сервера
     void handleShutdown(const httplib::Request& req, httplib::Response& res);
 };
+
+} // namespace pgw
 
 #endif // PGW_UDP_SERVER_H

@@ -8,24 +8,20 @@
 // Используется для отслеживания времени жизни сессии и автоматической
 // очистки устаревших сессий по таймауту
 
-class Session {
-public:
+struct Session {
     // Тип часов для измерения интервалов времени
     using clock = std::chrono::steady_clock;
-private:
+
     // IMSI (International Mobile Subscriber Identity) абонента
     pgw::types::imsi_t m_imsi;
 
     // Временная метка создания сессии
     clock::time_point m_createdTime;
-public:
-    explicit Session(pgw::types::constImsi_t imsi) : m_imsi{imsi}, m_createdTime{clock::now()}{
-        // . . .
+
+    explicit Session(pgw::types::constImsi_t imsi)
+    : m_imsi{imsi}, m_createdTime{clock::now()}{
     };
     ~Session() = default;
-
-    // Возвращает IMSI абонента, связанного с этой сессией
-    pgw::types::constImsi_t getImsi() const { return m_imsi;}
 
     // Вычисляет возраст сессии (время с момента создания)
     pgw::types::seconds_t getAge() const {

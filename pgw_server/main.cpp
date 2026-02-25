@@ -35,12 +35,12 @@ int main(int argc, char* argv[]){
         );
 
         // Инициализирцем журнал создания сессий
-        CdrWriter cdrWriter(
+        pgw::CdrWriter cdrWriter(
             config.getCdrFile()
         );
 
         // Инициализирцем менеджер сессий
-        SessionManager sessionManager(
+        pgw::SessionManager sessionManager(
             cdrWriter,
             config.getBlacklist(),
             config.getSessionTimeoutSec(),
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
         );
 
         // Инициализируем сервер на прием сообщений от клиента
-        UdpServer udpServer(
+        pgw::UdpServer udpServer(
             sessionManager,
             config.getUdpIp(),
             config.getUdpPort()
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
         std::atomic<bool> shutdownRequest{false};
 
         // Инициализируем сервер на прием http запросов менеджеру сессий
-        HttpServer httpServer(
+        pgw::HttpServer httpServer(
             sessionManager,
             config.getHttpPort(),
             shutdownRequest

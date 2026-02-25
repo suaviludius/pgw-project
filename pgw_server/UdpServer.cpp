@@ -5,6 +5,7 @@
 
 #include <cstring>
 
+namespace pgw {
 
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      pgw::types::constIp_t ip,
@@ -100,9 +101,11 @@ void UdpServer::handler(){
 }
 
 bool UdpServer::validateImsi(const std::string& imsi){
-    if (!pgw::validation::is_valid_imsi(imsi)) {
+    if (!pgw::validation::isValidImsi(imsi)) {
         LOG_WARN("UDP server receive invalid imsi: ", imsi);
         return false;
     }
     return true;
 }
+
+} // namespace pgw

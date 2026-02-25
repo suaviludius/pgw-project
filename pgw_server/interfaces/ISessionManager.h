@@ -3,8 +3,7 @@
 
 #include "types.h"
 
-class ISessionManager {
-public:
+struct ISessionManager {
     enum class CreateResult {
         CREATED,
         REJECTED_BLACKLIST,
@@ -14,9 +13,9 @@ public:
 
     virtual ~ISessionManager() = default;
 
-    virtual CreateResult createSession(pgw::types::constImsi_t imsi) = 0;
-    virtual bool hasSession(pgw::types::constImsi_t imsi) const = 0;
-    virtual bool addToBlacklist(pgw::types::constImsi_t imsi) = 0;
+    virtual CreateResult createSession(const pgw::types::imsi_t& imsi) = 0;
+    virtual bool hasSession(const pgw::types::imsi_t& imsi) const = 0;
+    virtual bool addToBlacklist(const pgw::types::imsi_t& imsi) = 0;
     virtual size_t countActiveSession() const = 0;
 };
 

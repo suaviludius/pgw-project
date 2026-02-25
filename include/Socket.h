@@ -4,6 +4,8 @@
 #include "ISocket.h"
 #include "types.h"
 
+namespace pgw {
+
 class Socket : public ISocket {
 private:
     // Максимальный размер приемного буффера (в байтах)
@@ -46,5 +48,7 @@ public:
     // Преобразует sockaddr_in в читаемую строку формата "IP:PORT"
     std::string addrToString(const sockaddr_in& addr) override;
 };
+
+} // namespace pgw
 
 #endif // PGW_SOCKET_H

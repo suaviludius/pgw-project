@@ -11,6 +11,8 @@
 // Принимает UDP датаграммы, валидирует IMSI и передает управление SessionManager
 // Предоставляет интерфейс для интеграции с poll/epoll
 
+namespace pgw {
+
 class UdpServer{
 private:
     // Максимальный размер принимаемого UDP пакета
@@ -58,5 +60,7 @@ public:
     // Проверяет длину, допустимые символы imsi
     bool validateImsi(const std::string& imsi);
 };
+
+} // namespace pgw
 
 #endif // PGW_UDP_SERVER_H
