@@ -5,6 +5,7 @@
 
 #include <cstring>
 
+namespace pgw {
 
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      pgw::types::constIp_t ip,
@@ -106,3 +107,5 @@ bool UdpServer::validateImsi(const std::string& imsi){
     }
     return true;
 }
+
+} // namespace pgw

@@ -10,6 +10,8 @@
 #include <system_error>
 #include <vector>
 
+namespace pgw {
+
 Socket::Socket(){
     // Создаем дискриптор для сокета IPv4 + UDP
     m_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -143,3 +145,5 @@ std::string Socket::addrToString(const sockaddr_in& addr) {
 
     return std::string(ip) + " : " + std::to_string(ntohs(addr.sin_port));
 }
+
+} // namespace pgw

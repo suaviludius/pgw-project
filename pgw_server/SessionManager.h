@@ -12,6 +12,8 @@
 // Отвечает за создание, хранение и удаление сессий, взаимодействует
 // с системой CDR (Call Detail Records) и поддерживает graceful shutdown
 
+namespace pgw {
+
 class SessionManager : public ISessionManager {
 public:
     // Структура для хранения данных сессии абонента
@@ -69,5 +71,7 @@ public:
     // Завершение всех сессий с контролируемой скоростью
     void gracefulShutdown();
 };
+
+} // namespace pgw
 
 #endif // PGW_SESSION_MANAGER_H

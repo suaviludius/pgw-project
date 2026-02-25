@@ -2,6 +2,8 @@
 
 #include "logger.h"
 
+namespace pgw {
+
 HttpServer::HttpServer(
     ISessionManager& sessionManager,
     pgw::types::port_t port,
@@ -163,3 +165,5 @@ void HttpServer::handleShutdown(const httplib::Request& req, httplib::Response& 
     res.status = static_cast<int>(Status::OK);
     LOG_INFO("HTTP server response: graceful shutdown request set");
 }
+
+} // namespace pgw

@@ -44,7 +44,7 @@ void Config::readConfigFile(const std::string& configPath){
 
 void Config::validateConfigData(){
     // Валидация портов
-    if(!pgw::validation::is_valid_port(m_serverPort)){
+    if(!pgw::validation::isValidPort(m_serverPort)){
         throw std::runtime_error("Invalid UDP port: " +
               std::to_string(m_serverPort));
     }

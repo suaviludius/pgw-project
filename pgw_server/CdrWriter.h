@@ -9,6 +9,8 @@
 // Класс для записи CDR (Call Detail Records) в файл
 // Каждая запись содержит временную метку, IMSI абонента и действие
 
+namespace pgw {
+
 class CdrWriter : public ICdrWriter {
     // Файловый поток для записи
     std::ofstream m_file;
@@ -20,5 +22,7 @@ public:
     // Формат записи: IMSI, ACTION, [TIMESTAMP]
     void writeAction(pgw::types::constImsi_t imsi, std::string_view action) override;
 };
+
+} // namespace pgw
 
 #endif // PGW_CDR_WRITER_H

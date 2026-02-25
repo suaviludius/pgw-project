@@ -2,6 +2,8 @@
 
 #include "logger.h"
 
+namespace pgw {
+
 CdrWriter::CdrWriter(pgw::types::constFilePath_t filename){
     // К сожалению, для open() строка должна содержать '\0' символ
     m_file.open(static_cast<std::string>(filename), std::ios::app);
@@ -32,3 +34,5 @@ void CdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view actio
 
     m_file.flush();
 }
+
+} // namespace pgw
