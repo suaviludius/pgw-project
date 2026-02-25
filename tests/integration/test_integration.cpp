@@ -57,17 +57,17 @@ TEST_F(IntegrationTest, FullUdpWork) {
 
     LOG_INFO("SERVER ============= ");
     // Инициализируем компоненты
-    CdrWriter cdrWriter(
+    pgw::CdrWriter cdrWriter(
         CDR_FILE
     );
 
-    SessionManager sessionManager(cdrWriter,
+    pgw::SessionManager sessionManager(cdrWriter,
         configServer.getBlacklist(),
         SESSION_TIMEOUT_S,
         configServer.getGracefulShutdownRate()
     );
 
-    UdpServer udpServer(sessionManager,
+    pgw::UdpServer udpServer(sessionManager,
         configServer.getUdpIp(),
         configServer.getUdpPort()
     );
@@ -85,7 +85,7 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_TRUE(configClient.isValid());
 
     // Создаем тестовый клиентский сокет
-    Socket clientSocket;
+    pgw::Socket clientSocket;
 
     // Отправляем IMSI
     std::string imsi = IMSI1;
