@@ -3,8 +3,7 @@
 
 #include "types.h"
 
-class ISessionManager {
-public:
+struct ISessionManager {
     enum class CreateResult {
         CREATED,
         REJECTED_BLACKLIST,

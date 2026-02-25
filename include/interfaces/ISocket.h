@@ -5,8 +5,7 @@
 
 #include <netinet/in.h> // Структуры сокетов для Unix систем
 
-class ISocket {
-public:
+struct ISocket {
     struct Packet{
         std::string data;       // Пришедшие данные
         sockaddr_in senderAddr; // Адрес отправителя (также адрес назначения при отправке)

@@ -3,8 +3,7 @@
 
 #include "types.h"
 
-class ICdrWriter {
-public:
+struct ICdrWriter {
     static constexpr std::string_view SESSION_CREATED = "CREATED";
     static constexpr std::string_view SESSION_DELETED = "DELETED";
     static constexpr std::string_view SESSION_REJECTED = "REJECTED";
