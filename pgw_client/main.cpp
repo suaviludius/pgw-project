@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
             config.getLogLevel()
         );
 
-        std::unique_ptr<ISocket> socket{std::make_unique<Socket>()};
+        std::unique_ptr<ISocket> socket{std::make_unique<pgw::Socket>()};
         LOG_INFO("Client send imsi: {}", imsi);
         socket->send(imsi, config.getServerIp(), config.getServerPort());
 
