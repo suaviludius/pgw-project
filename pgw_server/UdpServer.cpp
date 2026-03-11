@@ -1,5 +1,6 @@
 #include "UdpServer.h"
-#include "Socket.h"
+#include "UdpSocket.h"
+#include "SocketFactory.h"
 #include "logger.h"
 #include "validation.h"
 
@@ -10,19 +11,16 @@ namespace pgw {
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      pgw::types::constIp_t ip,
                      pgw::types::port_t port,
-                     std::unique_ptr<ISocket> socket)
+                     std::unique_ptr<IUdpSocket> socket)
 try : m_sessionManager{sessionManager},
-      // Если прийдет пустой указатель, то создаем соккет сами, иначе перемещаем
-      m_socket{socket ? std::move(socket) : std::make_unique<Socket>()},
-      //m_socket{std::move(socket)}, // Для тестов можно использовать этот вариант
+      m_socket{socket ? std::move(socket) : SocketFactory::createUdp()},
       m_ip{ip},
       m_port{port},
       m_running{false}{
     LOG_INFO("UDP server initialized");
 }
 catch(const std::exception& e){
-    LOG_ERROR("UDP server initialization  filed: {}", e.what());
-    // Пробрасываем исключение дальше
+    LOG_ERROR("UDP server initialization failed: {}", e.what());
     throw std::runtime_error("UDP server initialization failed");
 }
 
@@ -40,13 +38,12 @@ void UdpServer::start(){
     }
 
     try{
-        LOG_INFO("Starting UDP server ...");
-        m_socket->bind(m_ip,m_port);
+        LOG_INFO("Starting UDP server...");
+        m_socket->bind(m_ip, m_port);
         m_running = true;
     }
     catch (const std::exception& e){
         LOG_ERROR("UDP server start failed {} : {} - {}", m_ip, m_port, e.what());
-        // Пробрасываем с дополнительным контекстом
         throw std::runtime_error("UDP server start failed");
     }
 
@@ -60,22 +57,15 @@ void UdpServer::stop(){
     }
 }
 
-// Метод раcсчитан на использование с менеджером poll, epoll, select
+// Метод рассчитан на использование с менеджером poll, epoll, select
 void UdpServer::handler(){
-    if(!m_running) {
-        LOG_INFO("UDP server already running");
-        return;
-    }
-
     try{
         // Читаем все доступные пакеты
         while(true){
-            // Чтение происходит в неблокирующем режиме, т.е. в случае если на сокете нет данных,
-            // то соккет не будет блокировать программный процесс на себе до прихода данных,
-            // а просто вернет управление вызывающей функции со словами: "не сегодня, дружочек, в другой раз"
             auto packet = m_socket->receive();
 
             if(packet.data.empty()) break;
+            
             std::string answer {"rejected"};
             std::string imsi = packet.data;
 
@@ -92,17 +82,17 @@ void UdpServer::handler(){
                 }
             }
 
-            m_socket->send(answer,packet.senderAddr);
+            m_socket->send(answer, packet.senderAddr);
         }
     }
     catch(const std::exception& e){
-        LOG_ERROR("UDP server runninig error: {}", e.what());
+        LOG_ERROR("UDP server running error: {}", e.what());
     }
 }
 
 bool UdpServer::validateImsi(const std::string& imsi){
     if (!pgw::validation::isValidImsi(imsi)) {
-        LOG_WARN("UDP server receive invalid imsi: ", imsi);
+        LOG_WARN("UDP server received invalid imsi: {}", imsi);
         return false;
     }
     return true;

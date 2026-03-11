@@ -3,25 +3,36 @@
 
 #include "types.h"
 
-#include <netinet/in.h> // Структуры сокетов для Unix систем
+#include <string>
+#include <netinet/in.h>  // sockaddr_in для Unix систем
 
-struct ISocket {
-    struct Packet{
-        std::string data;       // Пришедшие данные
-        sockaddr_in senderAddr; // Адрес отправителя (также адрес назначения при отправке)
+namespace pgw {
+
+// Базовый интерфейс для всех сокетов
+// Предоставляет минимальный набор методов для работы с poll/epoll
+class ISocket {
+public:
+    // Пакет данных (используется в UDP и TCP)
+    struct Packet {
+        std::string data;       // Принятые данные
+        sockaddr_in senderAddr; // Адрес отправителя (для TCP - локальный адрес)
     };
 
     virtual ~ISocket() = default;
 
-    virtual void bind(pgw::types::constIp_t ip, pgw::types::port_t port) = 0;
-    virtual void send(std::string_view data, const sockaddr_in& addres) = 0;
-    virtual void send(std::string_view data, pgw::types::constIp_t ip, pgw::types::port_t port) = 0;
-    virtual Packet receive() = 0;
+    // Закрывает сокет
     virtual void close() = 0;
 
+    // Возвращает файловый дескриптор сокета (для poll/epoll)
     virtual int getFd() const = 0;
+
+    // Возвращает локальный адрес сокета
     virtual const sockaddr_in& getAddr() const = 0;
-    virtual std::string addrToString(const sockaddr_in& addr) = 0; // Из sockaddr_in делает string c ip:port
+
+    // Преобразует sockaddr_in в строку "IP:PORT"
+    virtual std::string addrToString(const sockaddr_in& addr) = 0;
 };
+
+} // namespace pgw
 
 #endif // I_SOCKET_H
