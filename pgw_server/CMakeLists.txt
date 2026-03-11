@@ -26,7 +26,7 @@ target_include_directories(
 
 target_link_libraries(
     pgw_server PRIVATE
-    # Библиотека с logger и Socket
+    # Библиотека с logger, UdpSocket, TcpSocket, SocketFactory
     pgw_common
     nlohmann_json::nlohmann_json
     spdlog::spdlog
