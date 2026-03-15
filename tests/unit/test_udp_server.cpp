@@ -3,7 +3,6 @@
 #include "MockSocket.h"
 
 #include "UdpServer.h"
-#include "Socket.h"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -80,7 +79,7 @@ bool operator==(const sockaddr_in& lhs, const sockaddr_in& rhs) {
 
 TEST_F(UdpServerTest, RunWithValidImsi){
     // Arrange
-    ISocket::Packet testPacket {IMSI1, ADDR};
+    pgw::ISocket::Packet testPacket {IMSI1, ADDR};
 
     EXPECT_CALL(*mockSocket, bind(IP, PORT))
         .Times(1);
@@ -88,7 +87,7 @@ TEST_F(UdpServerTest, RunWithValidImsi){
     EXPECT_CALL(*mockSocket, receive())
         .Times(2)
         .WillOnce(testing::Return(testPacket))            // При вызове receive() вернём testPacket
-        .WillOnce(testing::Return(ISocket::Packet{}));    // Второй пакет будет пустой
+        .WillOnce(testing::Return(pgw::ISocket::Packet{}));    // Второй пакет будет пустой
 
     EXPECT_CALL(*mockSessionManager, createSession(IMSI1))
         .Times(1)
@@ -108,7 +107,7 @@ TEST_F(UdpServerTest, RunWithValidImsi){
 
 TEST_F(UdpServerTest, RunWithInvalidImsi) {
     // Arrange
-    ISocket::Packet testPacket {"8-800-555-35-35", ADDR};
+    pgw::ISocket::Packet testPacket {"8-800-555-35-35", ADDR};
 
     EXPECT_CALL(*mockSocket, bind(IP, PORT))
         .Times(1);
@@ -116,7 +115,7 @@ TEST_F(UdpServerTest, RunWithInvalidImsi) {
     EXPECT_CALL(*mockSocket, receive())
         .Times(2)
         .WillOnce(testing::Return(testPacket))            // При вызове receive() вернём testPacket
-        .WillOnce(testing::Return(ISocket::Packet{}));    // Второй пакет будет пустой
+        .WillOnce(testing::Return(pgw::ISocket::Packet{}));    // Второй пакет будет пустой
 
     EXPECT_CALL(*mockSessionManager, createSession(IMSI1))
         .Times(0);
@@ -135,7 +134,7 @@ TEST_F(UdpServerTest, RunWithInvalidImsi) {
 
 TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
     // Arrange
-    ISocket::Packet testPacket {IMSI1, ADDR};
+    pgw::ISocket::Packet testPacket {IMSI1, ADDR};
 
     EXPECT_CALL(*mockSocket, bind(IP, PORT))
         .Times(1);
@@ -143,7 +142,7 @@ TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
     EXPECT_CALL(*mockSocket, receive())
         .Times(2)
         .WillOnce(testing::Return(testPacket))            // При вызове receive() вернём testPacket
-        .WillOnce(testing::Return(ISocket::Packet{}));    // Второй пакет будет пустой
+        .WillOnce(testing::Return(pgw::ISocket::Packet{}));    // Второй пакет будет пустой
 
     EXPECT_CALL(*mockSessionManager, createSession(IMSI1))
         .Times(1)
@@ -163,7 +162,7 @@ TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
 
 TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
     // Arrange
-    ISocket::Packet testPacket {IMSI1, ADDR};
+    pgw::ISocket::Packet testPacket {IMSI1, ADDR};
 
     EXPECT_CALL(*mockSocket, bind(IP, PORT))
         .Times(1);
@@ -171,7 +170,7 @@ TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
     EXPECT_CALL(*mockSocket, receive())
         .Times(2)
         .WillOnce(testing::Return(testPacket))            // При вызове receive() вернём testPacket
-        .WillOnce(testing::Return(ISocket::Packet{}));    // Второй пакет будет пустой
+        .WillOnce(testing::Return(pgw::ISocket::Packet{}));    // Второй пакет будет пустой
 
     EXPECT_CALL(*mockSessionManager, createSession(IMSI1))
         .Times(1)
