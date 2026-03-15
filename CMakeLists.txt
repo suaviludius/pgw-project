@@ -48,6 +48,9 @@ target_link_libraries(
     spdlog::spdlog
 )
 
+# Библиотека ядра (используется сервером)
+add_subdirectory(pgw_core)
+
 if(BUILD_CLIENT)
     add_subdirectory(pgw_client)
 endif()
