@@ -1,5 +1,6 @@
 add_executable(pgw_server
     main.cpp
+    HttpServer.cpp
 )
 
 set_target_properties(pgw_server PROPERTIES
@@ -8,25 +9,17 @@ set_target_properties(pgw_server PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
 )
 
-target_sources(
-    pgw_server PRIVATE
-    Config.cpp
-    HttpServer.cpp
-    CdrWriter.cpp
-    SessionManager.cpp
-    UdpServer.cpp
-)
-
 target_include_directories(
     pgw_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/interfaces
 )
 
 target_link_libraries(
     pgw_server PRIVATE
-    # Библиотека с logger, UdpSocket, TcpSocket, SocketFactory
+    # Библиотека ядра
+    pgw_core
+    # Общие компоненты
     pgw_common
     nlohmann_json::nlohmann_json
     spdlog::spdlog

@@ -1,10 +1,10 @@
 #include "logger.h"
 #include "pgw_client/Config.h"
-#include "pgw_server/Config.h"
+#include "pgw_core/include/Config.h"
 #include "CdrWriter.h"
 #include "SessionManager.h"
 #include "UdpServer.h"
-#include "HttpServer.h"
+#include "pgw_server/HttpServer.h"
 #include "UdpSocket.h"
 #include "SocketFactory.h"
 
