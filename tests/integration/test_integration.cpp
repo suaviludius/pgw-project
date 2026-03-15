@@ -3,9 +3,10 @@
 #include "pgw_server/Config.h"
 #include "CdrWriter.h"
 #include "SessionManager.h"
-#include "Socket.h"
 #include "UdpServer.h"
 #include "HttpServer.h"
+#include "UdpSocket.h"
+#include "SocketFactory.h"
 
 #include <gtest/gtest.h>
 
@@ -85,13 +86,13 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_TRUE(configClient.isValid());
 
     // Создаем тестовый клиентский сокет
-    pgw::Socket clientSocket;
+    std::unique_ptr<pgw::IUdpSocket> clientSocket{pgw::SocketFactory::createUdp()};
 
     // Отправляем IMSI
     std::string imsi = IMSI1;
     LOG_INFO("Send imsi: {}", imsi);
     EXPECT_NO_THROW({
-        clientSocket.send(imsi, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
     });
 
     // Обрабатываем прием пакета на сервере
@@ -143,7 +144,7 @@ TEST_F(IntegrationTest, FullUdpWork) {
     sessionManager.addToBlacklist(imsi);
     LOG_INFO("Send blacklisted imsi: {}", imsi);
     EXPECT_NO_THROW({
-        clientSocket.send(imsi, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
     });
 
     // Даем время на обработку
@@ -164,13 +165,13 @@ TEST_F(IntegrationTest, FullUdpWork) {
     LOG_INFO("CLIENT =============");
     EXPECT_NO_THROW({
         LOG_INFO("Send imsi: {}", IMSI2);
-        clientSocket.send(IMSI2, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(IMSI2, configClient.getServerIp(), configClient.getServerPort());
         LOG_INFO("Sendend imsi: {}", IMSI3);
-        clientSocket.send(IMSI3, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(IMSI3, configClient.getServerIp(), configClient.getServerPort());
         LOG_INFO("Send imsi: {}", IMSI4);
-        clientSocket.send(IMSI4, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(IMSI4, configClient.getServerIp(), configClient.getServerPort());
         LOG_INFO("Send imsi: {}", IMSI5);
-        clientSocket.send(IMSI5, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(IMSI5, configClient.getServerIp(), configClient.getServerPort());
     });
 
     // Даем время на обработку
