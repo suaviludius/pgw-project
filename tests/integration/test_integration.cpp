@@ -143,7 +143,7 @@ TEST_F(IntegrationTest, FullUdpWork) {
     sessionManager.addToBlacklist(imsi);
     LOG_INFO("Send blacklisted imsi: {}", imsi);
     EXPECT_NO_THROW({
-        clientSocket.send(imsi, configClient.getServerIp(), configClient.getServerPort());
+        clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
     });
 
     // Даем время на обработку
