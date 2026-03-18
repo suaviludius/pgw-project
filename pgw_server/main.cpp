@@ -2,7 +2,7 @@
 #include "Config.h"
 #include "CdrWriter.h"
 #include "SessionManager.h"
-#include "Socket.h"
+#include "SocketFactory.h"
 #include "UdpServer.h"
 #include "HttpServer.h"
 
@@ -51,7 +51,8 @@ int main(int argc, char* argv[]){
         pgw::UdpServer udpServer(
             sessionManager,
             config.getUdpIp(),
-            config.getUdpPort()
+            config.getUdpPort(),
+            pgw::SocketFactory::createUdp()
         );
 
         // Флаг запроса на завершение работы (разделяемый между потоками)

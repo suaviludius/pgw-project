@@ -34,7 +34,9 @@ FetchContent_MakeAvailable(httplib)
 # Общие исходники (статическая библиотека)
 add_library(pgw_common STATIC
     src/logger.cpp
-    src/Socket.cpp
+    src/UdpSocket.cpp
+    src/SocketUtils.cpp
+    src/SocketFactory.cpp
 )
 target_include_directories(pgw_common PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/interfaces

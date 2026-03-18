@@ -1,6 +1,6 @@
 #include "Config.h"
 #include "logger.h"
-#include "Socket.h"
+#include "SocketFactory.h"
 
 #include <poll.h>
 #include <atomic>
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
             config.getLogLevel()
         );
 
-        std::unique_ptr<ISocket> socket{std::make_unique<pgw::Socket>()};
+        std::unique_ptr<pgw::IUdpSocket> socket{pgw::SocketFactory::createUdp()};
         LOG_INFO("Client send imsi: {}", imsi);
         socket->send(imsi, config.getServerIp(), config.getServerPort());
 

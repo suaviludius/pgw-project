@@ -1,9 +1,8 @@
 #include "logger.h"
+#include "MockUdpSocket.h"
 #include "MockSessionManager.h"
-#include "MockSocket.h"
 
 #include "UdpServer.h"
-#include "Socket.h"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -11,7 +10,7 @@
 struct UdpServerTest : public testing::Test {
     // Будем использовать умные указатели, чтобы лишний раз не инициализировать рессурсы
     std::unique_ptr<MockSessionManager> mockSessionManager;
-    std::unique_ptr<MockSocket> mockSocket;
+    std::unique_ptr<MockUdpSocket> mockSocket;
     const pgw::types::ip_t IP {"0.0.0.0"};
     const pgw::types::port_t PORT {1};
     const pgw::types::imsi_t IMSI1 {"012340123401234"};
@@ -24,7 +23,7 @@ struct UdpServerTest : public testing::Test {
     static void TearDowmTestSuite(){}
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {
-        mockSocket = std::make_unique<MockSocket>();
+        mockSocket = std::make_unique<MockUdpSocket>();
         mockSessionManager = std::make_unique<MockSessionManager>();
     }
     // Метод, вызываемый в конце каждого теста

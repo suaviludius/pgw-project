@@ -1,5 +1,5 @@
 #include "UdpServer.h"
-#include "Socket.h"
+#include "SocketFactory.h"
 #include "logger.h"
 #include "validation.h"
 
@@ -10,10 +10,10 @@ namespace pgw {
 UdpServer::UdpServer(ISessionManager& sessionManager,
                      pgw::types::constIp_t ip,
                      pgw::types::port_t port,
-                     std::unique_ptr<ISocket> socket)
+                     std::unique_ptr<IUdpSocket> socket)
 try : m_sessionManager{sessionManager},
       // Если прийдет пустой указатель, то создаем соккет сами, иначе перемещаем
-      m_socket{socket ? std::move(socket) : std::make_unique<Socket>()},
+      m_socket{socket ? std::move(socket) : SocketFactory::createUdp()},
       //m_socket{std::move(socket)}, // Для тестов можно использовать этот вариант
       m_ip{ip},
       m_port{port},
