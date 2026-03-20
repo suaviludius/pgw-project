@@ -1,8 +1,10 @@
 #include "SocketUtils.h"
 
 #include <arpa/inet.h>  // inet_pton, inet_ntop
+#include <netdb.h>      // getaddrinfo
 #include <cstring>      // memset
 #include <stdexcept>
+#include <system_error>
 
 namespace pgw {
 
@@ -12,9 +14,26 @@ sockaddr_in SocketUtils::createAddress(pgw::types::constIp_t ip, pgw::types::por
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
 
-    if (::inet_pton(AF_INET, std::string(ip).c_str(), &addr.sin_addr) != 1) {
-        throw std::runtime_error("Failed to parse IP address: " + std::string(ip));
+    // Сначала пробуем как IP-адрес
+    if (::inet_pton(AF_INET, std::string(ip).c_str(), &addr.sin_addr) == 1) {
+        return addr;
     }
+
+    // Если не IP, пробуем резолвить как hostname
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int status = ::getaddrinfo(std::string(ip).c_str(), nullptr, &hints, &res);
+    if (status != 0) {
+        throw std::runtime_error("Failed to resolve hostname: " + std::string(ip) + 
+                                 " (" + std::string(gai_strerror(status)) + ")");
+    }
+
+    // Копируем первый найденный адрес
+    addr.sin_addr = reinterpret_cast<struct sockaddr_in*>(res->ai_addr)->sin_addr;
+    ::freeaddrinfo(res);
 
     return addr;
 }

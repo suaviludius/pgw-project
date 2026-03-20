@@ -2,10 +2,11 @@
 #define MOCK_UDP_SOCKET_H
 
 #include "IUdpSocket.h"
+#include "ISocket.h"
 
 #include <gmock/gmock.h>
 
-class MockUdpSocket : public IUdpSocket {
+class MockUdpSocket : public pgw::IUdpSocket {
 public:
     MOCK_METHOD(void, bind, (pgw::types::constIp_t ip, pgw::types::port_t port), (override));
     MOCK_METHOD(void, send, (std::string_view data, const sockaddr_in& address), (override));

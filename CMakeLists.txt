@@ -35,6 +35,7 @@ FetchContent_MakeAvailable(httplib)
 add_library(pgw_common STATIC
     src/logger.cpp
     src/UdpSocket.cpp
+    src/TcpSocket.cpp
     src/SocketUtils.cpp
     src/SocketFactory.cpp
 )

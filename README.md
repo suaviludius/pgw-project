@@ -17,7 +17,22 @@
 - CMake 3.15+
 - Linux (тестировано на Ubuntu 20.04+)
 
-## Сборка
+## Сборка и запуск
+
+### Вариант 1: Docker (рекомендуемый)
+```bash
+make docker-build            # Собрать образы без тестов
+make docker-build-t          # Cобрать образы с тестами
+make docker-server           # Запустить сервер
+make docker-client           # Запустить клиент
+make docker-test             # Запустить тесты
+make docker-start            # Собрать и запустить все сервисы
+make docker-stop             # Остановить
+make docker-logs             # Логи сервера
+make docker-shell            # Подключиться к контейнеру
+```
+
+### Вариант 2: Локальная сборка
 ```bash
 git clone https://github.com/suaviludius/pgw-project.git
 cd pgw-project
