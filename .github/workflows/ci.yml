@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  # Сборка и тесты
+  build-and-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ make
+
+      - name: Configure CMake (с тестами)
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+
+      - name: Build project
+        run: |
+          cd build
+          cmake --build . --config Release -j$(nproc)
+
+      - name: Run tests
+        run: |
+          ./build/tests/test_config && \
+          ./build/tests/test_logger && \
+          ./build/tests/test_session_manager && \
+          ./build/tests/test_udp_server && \
+          ./build/tests/test_integration
+
+  # Docker сборка
+  docker-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image (без тестов)
+        run: make docker-build
+
+      - name: Build Docker image (с тестами)
+        run: make docker-build-with-tests
+
+      - name: Run Docker tests
+        run: make docker-test
