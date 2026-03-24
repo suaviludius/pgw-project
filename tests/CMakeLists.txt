@@ -11,12 +11,14 @@ add_executable(
     test_session_manager
     unit/test_session_manager.cpp
 )
-
 add_executable(
     test_udp_server
     unit/test_udp_server.cpp
 )
-
+add_executable(
+    test_database
+    unit/test_database.cpp
+)
 add_executable(
     test_integration
     integration/test_integration.cpp
@@ -113,6 +115,13 @@ target_link_libraries(
     GTest::gmock        # Для mock
 )
 target_link_libraries(
+    test_database PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main
+    SQLite::SQLite3
+)
+target_link_libraries(
     test_integration PRIVATE
     pgw_common
     GTest::gtest
@@ -122,3 +131,13 @@ target_link_libraries(
     spdlog::spdlog
     httplib::httplib
 )
+
+# Регистрация тестов в CTest
+enable_testing()
+add_test(NAME test_config COMMAND test_config)
+add_test(NAME test_logger COMMAND test_logger)
+add_test(NAME test_session_manager COMMAND test_session_manager)
+add_test(NAME test_udp_server COMMAND test_udp_server)
+add_test(NAME test_database COMMAND test_database)
+add_test(NAME test_event_logger COMMAND test_event_logger)
+add_test(NAME test_integration COMMAND test_integration)
