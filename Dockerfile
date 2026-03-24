@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
+    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем рабочую директорию
@@ -49,10 +50,12 @@ FROM ubuntu:22.04 AS runtime
 # libstdc++6 - стандартная библиотека C++
 # libgcc-s1  - GCC
 # curl       - http
+# libsqlite3-0 - SQLite runtime
 RUN apt-get update && apt-get install -y \
     libstdc++6 \
     libgcc-s1 \
     curl \
+    libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаем пользователя для запуска приложения

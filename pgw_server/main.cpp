@@ -34,10 +34,11 @@ int main(int argc, char* argv[]){
             config.getLogLevel()
         );
 
-        // Инициализирцем журнал создания сессий
-        pgw::CdrWriter cdrWriter(
-            config.getCdrFile()
-        );
+        // Инициализирцем журнал создания сессий (SQLite)
+        pgw::CdrWriter cdrWriter("pgw.db");
+        if (!cdrWriter.initialize()) {
+            LOG_ERROR("Failed to initialize database, continuing with limited functionality");
+        }
 
         // Инициализирцем менеджер сессий
         pgw::SessionManager sessionManager(

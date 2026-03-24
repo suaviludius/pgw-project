@@ -31,6 +31,7 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     httplib::httplib
+    SQLite::SQLite3
 )
 
 configure_file(
