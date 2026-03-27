@@ -1,20 +1,27 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
+#include "DatabaseManager.h"
+
 #include <spdlog/spdlog.h>
 
 namespace pgw {
 namespace logger {
 
+inline constexpr size_t FILE_SIZE {10 * 1024 * 1024};
+inline constexpr size_t FILES_COUNT {3};
+inline constexpr const char* PATTERN {"[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v"};
+
 using level = spdlog::level::level_enum;
 
 // Инициализация работы оггера
-void init(
-    std::string_view logFile,
-    std::string_view logLevel,
-    size_t maxFileSize = 5 * 1024 * 1024,
-    size_t maxFiles = 3
-);
+void init(std::string_view logLevel);
+
+// Добавление файлового sink'а
+void addFileSink(const std::string& logFile);
+
+// Добавление Database sink'а
+void addDatabaseSink(std::shared_ptr<DatabaseManager> dbManager);
 
 // Остановка логгера и сброс всех сообщений
 void shutdown();

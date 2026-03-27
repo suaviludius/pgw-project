@@ -12,7 +12,9 @@ target_sources(
     pgw_server PRIVATE
     Config.cpp
     HttpServer.cpp
-    CdrWriter.cpp
+    FileCdrWriter.cpp
+    DatabaseCdrWriter.cpp
+    CdrWriterFactory.cpp
     SessionManager.cpp
     UdpServer.cpp
 )

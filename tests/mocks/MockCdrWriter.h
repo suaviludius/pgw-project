@@ -5,7 +5,7 @@
 
 #include <gmock/gmock.h>
 
-class MockCdrWriter : public ICdrWriter {
+class MockCdrWriter : public pgw::ICdrWriter {
 public:
     // MockCdrWriter() = default;
     // virtual ~MockCdrWriter() = default;

@@ -45,7 +45,7 @@ public:
     bool writeCdr(std::string_view imsi, std::string_view action);
 
     // Запись события
-    bool writeEvent(std::string_view level, std::string_view message);
+    bool writeLog(std::string_view level, std::string_view message, std::string_view timestamp);
 
     // Получение последних CDR записей
     std::vector<CdrRecord> getRecentCdr(size_t limit = 100);
@@ -68,7 +68,7 @@ private:
 
     // Prepared statements для быстрой вставки
     sqlite3_stmt* m_stmtWriteCdr = nullptr;
-    sqlite3_stmt* m_stmtWriteEvent = nullptr;
+    sqlite3_stmt* m_stmtWriteLog = nullptr;
 
     // Подготовка statement для запроса
     sqlite3_stmt* prepareStatement(const std::string& sql);

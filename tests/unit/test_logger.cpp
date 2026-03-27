@@ -56,7 +56,8 @@ TEST_F(LoggerTest, CreatesLogFile){
     std::string_view level {"INFO"};
     // Act
     EXPECT_NO_THROW({
-        pgw::logger::init(LOGGER_FILE, level);
+        pgw::logger::init(level);
+        pgw::logger::addFileSink(LOGGER_FILE);
         LOG_INFO(message);
         pgw::logger::shutdown();
     });
@@ -69,7 +70,8 @@ TEST_F(LoggerTest, LogLevelOperation){
     // Arrange
     // Act
     EXPECT_NO_THROW({
-        pgw::logger::init(LOGGER_FILE, "WARN");
+        pgw::logger::init("WARN");
+        pgw::logger::addFileSink(LOGGER_FILE);
         LOG_INFO("Test message");
         pgw::logger::shutdown();
     });
@@ -82,6 +84,6 @@ TEST_F(LoggerTest, IncorrectLogLevel){
     // Arrange
     // Act
     // Assert
-    EXPECT_ANY_THROW(pgw::logger::init(LOGGER_FILE, "TEST"));
+    EXPECT_ANY_THROW(pgw::logger::init("TEST"));
     pgw::logger::shutdown();
 }

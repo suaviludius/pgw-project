@@ -32,6 +32,7 @@ target_sources(
 target_sources(
     test_logger PRIVATE
     ${CMAKE_SOURCE_DIR}/src/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/DatabaseManager.cpp
 )
 target_sources(
     test_session_manager PRIVATE
@@ -45,7 +46,8 @@ target_sources(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_client/Config.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/DatabaseCdrWriter.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
 )
@@ -96,6 +98,7 @@ target_link_libraries(
 )
 target_link_libraries(
     test_logger PRIVATE
+    pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     spdlog::spdlog
@@ -139,5 +142,4 @@ add_test(NAME test_logger COMMAND test_logger)
 add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
 add_test(NAME test_database COMMAND test_database)
-add_test(NAME test_event_logger COMMAND test_event_logger)
 add_test(NAME test_integration COMMAND test_integration)

@@ -34,14 +34,15 @@ TEST_F(DatabaseTest, WriteCdr_Success) {
     EXPECT_EQ(records[0].action, "REJECTED");
 }
 
-TEST_F(DatabaseTest, WriteEvent_Success) {
-    EXPECT_TRUE(db->writeEvent("INFO", "Server started"));
-    EXPECT_TRUE(db->writeEvent("ERROR", "Connection failed"));
+TEST_F(DatabaseTest, WriteLog_Success) {
+    EXPECT_TRUE(db->writeLog("INFO", "Server started", "2026-03-27 20:20:26.312"));
+    EXPECT_TRUE(db->writeLog("ERROR", "Connection failed", "2026-03-27 20:20:27.123"));
 
     auto events = db->getRecentEvents(10);
     EXPECT_EQ(events.size(), 2);
     EXPECT_EQ(events[0].level, "ERROR");
     EXPECT_EQ(events[0].message, "Connection failed");
+    EXPECT_EQ(events[0].timestamp, "2026-03-27 20:20:27.123");
 }
 
 TEST_F(DatabaseTest, GetRecentCdr_Limit) {
@@ -55,7 +56,7 @@ TEST_F(DatabaseTest, GetRecentCdr_Limit) {
 
 TEST_F(DatabaseTest, GetRecentEvents_Limit) {
     for (int i = 0; i < 50; ++i) {
-        db->writeEvent("INFO", "Event " + std::to_string(i));
+        db->writeLog("INFO", "Event " + std::to_string(i), "2026-03-27 20:20:26.312");
     }
 
     auto events = db->getRecentEvents(20);
@@ -89,7 +90,7 @@ TEST_F(DatabaseTest, CdrRecord_Fields) {
 }
 
 TEST_F(DatabaseTest, EventRecord_Fields) {
-    db->writeEvent("WARNING", "High load detected");
+    db->writeLog("WARN", "High load detected", "2026-03-27 20:20:26.312");
 
     auto events = db->getRecentEvents(1);
     ASSERT_EQ(events.size(), 1);
@@ -100,6 +101,7 @@ TEST_F(DatabaseTest, EventRecord_Fields) {
     EXPECT_FALSE(events[0].timestamp.empty());
 
     // Проверяем значения
-    EXPECT_EQ(events[0].level, "WARNING");
+    EXPECT_EQ(events[0].level, "WARN");
     EXPECT_EQ(events[0].message, "High load detected");
+    EXPECT_EQ(events[0].timestamp, "2026-03-27 20:20:26.312");
 }
