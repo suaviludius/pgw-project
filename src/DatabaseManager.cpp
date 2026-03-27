@@ -1,5 +1,6 @@
 #include "DatabaseManager.h"
 #include <stdexcept>
+#include <array>
 
 namespace pgw {
 
@@ -18,14 +19,14 @@ constexpr const char* SCHEMA_SQL = R"(
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         level       TEXT(10) NOT NULL,
         message     TEXT(500) NOT NULL,
-        timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP
+        timestamp   TEXT(30) NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
 )";
 
 // Prepared statements
 constexpr const char* SQL_WRITE_CDR = "INSERT INTO cdr_records (imsi, action) VALUES (?, ?)";
-constexpr const char* SQL_WRITE_EVENT = "INSERT INTO events (level, message) VALUES (?, ?)";
+constexpr const char* SQL_WRITE_LOG = "INSERT INTO events (level, message, timestamp) VALUES (?, ?, ?)";
 constexpr const char* SQL_RECENT_CDR = "SELECT imsi, action, timestamp FROM cdr_records ORDER BY timestamp DESC LIMIT ?";
 constexpr const char* SQL_RECENT_EVENTS = "SELECT level, message, timestamp FROM events ORDER BY timestamp DESC LIMIT ?";
 constexpr const char* SQL_COUNT = "SELECT COUNT(*) FROM ";
@@ -44,15 +45,19 @@ void DatabaseManager::cleanup() {
         sqlite3_finalize(m_stmtWriteCdr);
         m_stmtWriteCdr = nullptr;
     }
-    if (m_stmtWriteEvent) {
-        sqlite3_finalize(m_stmtWriteEvent);
-        m_stmtWriteEvent = nullptr;
+    if (m_stmtWriteLog) {
+        sqlite3_finalize(m_stmtWriteLog);
+        m_stmtWriteLog = nullptr;
     }
     if (m_db) {
         sqlite3_close(m_db);
         m_db = nullptr;
     }
 }
+
+// TODO: стоит сделать метод добавления новых таблиц в БД
+// создать вектор или еще какой тип с дискрипторами, но как это сделать
+// известно только создателю SQlite и моей бабушке
 
 bool DatabaseManager::initialize() {
     // Открываем или создаем БД
@@ -73,9 +78,9 @@ bool DatabaseManager::initialize() {
 
     // Подготавливаем statements для быстрой вставки
     m_stmtWriteCdr = prepareStatement(SQL_WRITE_CDR);
-    m_stmtWriteEvent = prepareStatement(SQL_WRITE_EVENT);
+    m_stmtWriteLog = prepareStatement(SQL_WRITE_LOG);
 
-    return m_stmtWriteCdr != nullptr && m_stmtWriteEvent != nullptr;
+    return m_stmtWriteCdr != nullptr && m_stmtWriteLog != nullptr;
 }
 
 sqlite3_stmt* DatabaseManager::prepareStatement(const std::string& sql) {
@@ -88,6 +93,10 @@ sqlite3_stmt* DatabaseManager::prepareStatement(const std::string& sql) {
     }
     return stmt;
 }
+
+// TODO: стоит избавиться от дублирования кода в writeCdr() и writeLog()
+// Можно вынести реализацию в один файл и регулировать направление вывода,
+// передавая дополнительный параметр в виде целевой таблицы
 
 bool DatabaseManager::writeCdr(std::string_view imsi, std::string_view action) {
     if (!m_stmtWriteCdr) return false;
@@ -104,15 +113,16 @@ bool DatabaseManager::writeCdr(std::string_view imsi, std::string_view action) {
     return rc == SQLITE_DONE;
 }
 
-bool DatabaseManager::writeEvent(std::string_view level, std::string_view message) {
-    if (!m_stmtWriteEvent) return false;
+bool DatabaseManager::writeLog(std::string_view level, std::string_view message, std::string_view timestamp) {
+    if (!m_stmtWriteLog) return false;
 
-    sqlite3_reset(m_stmtWriteEvent);
+    sqlite3_reset(m_stmtWriteLog);
 
-    sqlite3_bind_text(m_stmtWriteEvent, 1, level.data(), static_cast<int>(level.size()), SQLITE_STATIC);
-    sqlite3_bind_text(m_stmtWriteEvent, 2, message.data(), static_cast<int>(message.size()), SQLITE_STATIC);
+    sqlite3_bind_text(m_stmtWriteLog, 1, level.data(), static_cast<int>(level.size()), SQLITE_STATIC);
+    sqlite3_bind_text(m_stmtWriteLog, 2, message.data(), static_cast<int>(message.size()), SQLITE_STATIC);
+    sqlite3_bind_text(m_stmtWriteLog, 3, timestamp.data(), static_cast<int>(timestamp.size()), SQLITE_STATIC);
 
-    int rc = sqlite3_step(m_stmtWriteEvent);
+    int rc = sqlite3_step(m_stmtWriteLog);
     return rc == SQLITE_DONE;
 }
 
