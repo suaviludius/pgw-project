@@ -1,7 +1,7 @@
 #include "logger.h"
 #include "pgw_client/Config.h"
 #include "pgw_server/Config.h"
-#include "CdrWriter.h"
+#include "ICdrWriter.h"
 #include "SessionManager.h"
 #include "SocketFactory.h"
 #include "UdpServer.h"
@@ -13,6 +13,9 @@
 #include <chrono>
 #include <fstream>
 #include <filesystem>
+
+// TODO: нужно сделать его рабочим под новый CDR
+// сейчас не хочу, уже поздно, лучше полежу на диване
 
 struct IntegrationTest : public testing::Test {
     static constexpr const char* CLIENT_CONFIG_FILE {"configs/pgw_client.json"};
@@ -39,6 +42,7 @@ struct IntegrationTest : public testing::Test {
         // Удаляем тестовые файлы
         std::filesystem::remove(CDR_FILE);
         std::filesystem::remove(LOG_FILE);
+        std::filesystem::remove("test_integration.db");
     }
 };
 
@@ -56,10 +60,13 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_TRUE(pgw::logger::isInit());
 
     LOG_INFO("SERVER ============= ");
+    
+    // Инициализируем менеджер базы данных
+    auto dbManager = std::make_shared<pgw::DatabaseManager>("test_integration.db");
+    ASSERT_TRUE(dbManager->initialize());
+    
     // Инициализируем компоненты
-    pgw::CdrWriter cdrWriter(
-        CDR_FILE
-    );
+    pgw::CdrWriter cdrWriter(*dbManager);
 
     pgw::SessionManager sessionManager(cdrWriter,
         configServer.getBlacklist(),

@@ -46,9 +46,9 @@ TEST_F(SessionManagerTest, CreateSessionManager){
 
 TEST_F(SessionManagerTest, CreateSessionSucsess) {
     // Arrange
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI2, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI2, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
@@ -63,7 +63,7 @@ TEST_F(SessionManagerTest, CreateSessionSucsess) {
 }
 
 TEST_F(SessionManagerTest, CreateSessionBlacklist) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_REJECTED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_REJECTED))
         .Times(1);
 
     auto imsi {IMSI1};
@@ -76,7 +76,7 @@ TEST_F(SessionManagerTest, CreateSessionBlacklist) {
 }
 
 TEST_F(SessionManagerTest, CreateSessionAlreadyExist) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
@@ -88,9 +88,9 @@ TEST_F(SessionManagerTest, CreateSessionAlreadyExist) {
 }
 
 TEST_F(SessionManagerTest, RemoveExistingSession) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_DELETED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_DELETED))
         .Times(1);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
@@ -102,7 +102,7 @@ TEST_F(SessionManagerTest, RemoveExistingSession) {
 }
 
 TEST_F(SessionManagerTest, RemoveNonExistentSession) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
@@ -112,9 +112,9 @@ TEST_F(SessionManagerTest, RemoveNonExistentSession) {
 }
 
 TEST_F(SessionManagerTest, CleanTimeoutSessionsNoneExpired) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED))
         .Times(1);
-    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, ICdrWriter::SESSION_DELETED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_DELETED))
         .Times(1);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
@@ -130,9 +130,9 @@ TEST_F(SessionManagerTest, CleanTimeoutSessionsNoneExpired) {
 }
 
 TEST_F(SessionManagerTest, GracefulShutdownSucsess) {
-    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, ICdrWriter::SESSION_CREATED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_CREATED))
         .Times(10);
-    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, ICdrWriter::SESSION_DELETED))
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_DELETED))
         .Times(10);
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
