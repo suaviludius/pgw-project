@@ -27,7 +27,7 @@ public:
 
 private:
     // Ссылка на систему записи CDR (записывает детали сессий)
-    ICdrWriter& m_cdrWriter;
+    pgw::ICdrWriter& m_cdrWriter;
 
     // Контейнер активных сессий абонентов
     sessions m_sessions;
@@ -43,7 +43,7 @@ private:
 
 public:
     explicit SessionManager(
-        ICdrWriter& cdrWriter,
+        pgw::ICdrWriter& cdrWriter,
         pgw::types::Blacklist& blacklist,
         const pgw::types::seconds_t timeout,
         const pgw::types::rate_t rate
