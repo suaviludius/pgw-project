@@ -18,16 +18,12 @@ struct ConfigTest : public testing::Test {
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {
         // Убедимся, что файла нет
-        if (std::filesystem::exists(CONFIG_FILE)) {
-            std::filesystem::remove(CONFIG_FILE);
-        }
+        std::filesystem::remove(CONFIG_FILE);
     }
     // Метод, вызываемый в конце каждого теста
     void TearDown() override {
         // Всегда удаляем файл после теста
-        if (std::filesystem::exists(CONFIG_FILE)) {
-            std::filesystem::remove(CONFIG_FILE);
-        }
+        std::filesystem::remove(CONFIG_FILE);
     }
 
     void createTestConfig(const std::string& content) {
@@ -69,9 +65,10 @@ TEST_F(ConfigTest, SuccessfulReading) {
             "udp_port": 12345,
             "http_port": 1555,
             "session_timeout_sec": 80,
-            "cdr_file": "file1.log",
+            "database_file": "file1.db",
+            "cdr_file": "file2.log",
             "graceful_shutdown_rate": 5,
-            "log_file": "file2.log",
+            "log_file": "file3.log",
             "log_level": "DEBUG",
             "blacklist": ["012340123401234", "000111222333444"]
     })");
@@ -88,9 +85,10 @@ TEST_F(ConfigTest, SuccessfulReading) {
         EXPECT_EQ(config.getUdpPort(), 12345);
         EXPECT_EQ(config.getHttpPort(), 1555);
         EXPECT_EQ(config.getSessionTimeoutSec().count(), 80);
-        EXPECT_EQ(config.getCdrFile(), "file1.log");
+        EXPECT_EQ(config.getDatabaseFile(), "file1.db");
+        EXPECT_EQ(config.getCdrFile(), "file2.log");
         EXPECT_EQ(config.getGracefulShutdownRate(), 5);
-        EXPECT_EQ(config.getLogFile(), "file2.log");
+        EXPECT_EQ(config.getLogFile(), "file3.log");
         EXPECT_EQ(config.getLogLevel(), "DEBUG");
         EXPECT_NE(config.getBlacklist().find("012340123401234"), config.getBlacklist().end());
         EXPECT_NE(config.getBlacklist().find("000111222333444"), config.getBlacklist().end());
@@ -112,6 +110,7 @@ TEST_F(ConfigTest, UsesDefaultValues) {
         EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
         EXPECT_EQ(config.getHttpPort(), pgw::constants::server::defaults::HTTP_PORT);
         EXPECT_EQ(config.getSessionTimeoutSec().count(), pgw::constants::server::defaults::TIMEOUT_SEC);
+        EXPECT_EQ(config.getDatabaseFile(), pgw::constants::server::defaults::DATABASE_FILE);
         EXPECT_EQ(config.getCdrFile(), pgw::constants::server::defaults::CDR_FILE);
         EXPECT_EQ(config.getGracefulShutdownRate(), pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE);
         EXPECT_EQ(config.getLogFile(), pgw::constants::server::defaults::LOG_FILE);

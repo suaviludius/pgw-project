@@ -24,6 +24,7 @@ namespace server::defaults {
     inline constexpr uint64_t TIMEOUT_SEC {30};
     inline constexpr pgw::types::rate_t GRACEFUL_SHUTDOWN_RATE {10};
 
+    inline constexpr pgw::types::constFilePath_t DATABASE_FILE {"pgw.db"};
     inline constexpr pgw::types::constFilePath_t CDR_FILE {"cdr.log"};
     inline constexpr pgw::types::constFilePath_t LOG_FILE {"pgw.log"};
     inline constexpr pgw::types::constLogLevel_t LEVEL {"INFO"};

@@ -2,21 +2,27 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
-class DatabaseTest : public ::testing::Test {
-protected:
+struct DatabaseTest : public testing::Test {
     std::unique_ptr<pgw::DatabaseManager> db;
-    std::string testDbPath = "test_pgw.db";
+    static constexpr const char* DB_FILE {"test_pgw.db"};
 
+    // Метод, вызываемый перед всеми тестами
+    static void SetUpTestSuit(){}
+    // Метод, вызываемый после всех тестов
+    static void TearDowmTestSuite(){}
+
+    // Метод, вызываемый в начале каждого теста
     void SetUp() override {
         // Удаляем старую тестовую БД если есть
-        std::filesystem::remove(testDbPath);
-        db = std::make_unique<pgw::DatabaseManager>(testDbPath);
+        std::filesystem::remove(DB_FILE);
+        db = std::make_unique<pgw::DatabaseManager>(DB_FILE);
         ASSERT_TRUE(db->initialize());
     }
 
+    // Метод, вызываемый в конце каждого теста
     void TearDown() override {
         db.reset();
-        std::filesystem::remove(testDbPath);
+        std::filesystem::remove(DB_FILE);
     }
 };
 

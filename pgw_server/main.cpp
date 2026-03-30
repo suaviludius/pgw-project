@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
         pgw::logger::init(config.getLogLevel());
 
         // Инициализируем менеджер базы данных (единый для CDR и логов)
-        auto dbManager = std::make_shared<pgw::DatabaseManager>("pgw.db");
+        auto dbManager = std::make_shared<pgw::DatabaseManager>(std::string(config.getDatabaseFile()));
 
         // Инициализируем CDR writer
         std::unique_ptr<pgw::ICdrWriter> cdrWriter;

@@ -18,8 +18,8 @@ completedColumns:
 
 ## Todo
 
-- [feat-sqlite-интеграция](tasks/feat-sqlite-интеграция.md)
-
 ## In Progress
 
 ## Done
+
+- [feat-sqlite-интеграция](tasks/feat-sqlite-интеграция.md)
