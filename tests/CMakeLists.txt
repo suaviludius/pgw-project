@@ -48,6 +48,7 @@ target_sources(
     ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/FileCdrWriter.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriterFactory.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
 )
@@ -65,8 +66,6 @@ target_include_directories(
 target_include_directories(
     test_session_manager PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_server
@@ -74,8 +73,6 @@ target_include_directories(
 target_include_directories(
     test_udp_server PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_server
@@ -83,6 +80,7 @@ target_include_directories(
 target_include_directories(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/configs
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_client
     ${CMAKE_SOURCE_DIR}/pgw_server

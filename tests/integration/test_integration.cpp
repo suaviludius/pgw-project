@@ -1,7 +1,7 @@
 #include "logger.h"
 #include "pgw_client/Config.h"
 #include "pgw_server/Config.h"
-#include "ICdrWriter.h"
+#include "CdrWriterFactory.h"
 #include "SessionManager.h"
 #include "SocketFactory.h"
 #include "UdpServer.h"
@@ -14,14 +14,13 @@
 #include <fstream>
 #include <filesystem>
 
-// TODO: нужно сделать его рабочим под новый CDR
-// сейчас не хочу, уже поздно, лучше полежу на диване
 
 struct IntegrationTest : public testing::Test {
     static constexpr const char* CLIENT_CONFIG_FILE {"configs/pgw_client.json"};
     static constexpr const char* SERVER_CONFIG_FILE {"configs/pgw_server.json"};
     static constexpr const char* CDR_FILE {"test_integration_cdr.log"};
     static constexpr const char* LOG_FILE {"test_integration.log"};
+    static constexpr const char* DB_FILE {"test_integration.db"};
     const pgw::types::seconds_t SESSION_TIMEOUT_S {3}; // Создаем свой таймаут для сессии, чтобы долго не ждать
     const pgw::types::imsi_t IMSI1 {"012340123401234"};
     const pgw::types::imsi_t IMSI2 {"000000000000001"};
@@ -32,9 +31,9 @@ struct IntegrationTest : public testing::Test {
     const pgw::types::imsi_t IMSI_BLACKLISTED {"101010101010101"};
 
     // Метод, вызываемый перед всеми тестами
-    static void SetUpTestSuit(){}
+    static void SetUpTestSuite(){}
     // Метод, вызываемый после всех тестов
-    static void TearDowmTestSuite(){}
+    static void TearDownTestSuite(){}
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {}
     // Метод, вызываемый в конце каждого теста
@@ -42,7 +41,7 @@ struct IntegrationTest : public testing::Test {
         // Удаляем тестовые файлы
         std::filesystem::remove(CDR_FILE);
         std::filesystem::remove(LOG_FILE);
-        std::filesystem::remove("test_integration.db");
+        std::filesystem::remove(DB_FILE);
     }
 };
 
@@ -53,22 +52,23 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_TRUE(configServer.isValid());
 
     // Инициализируем логгер с уровнем из конфига, но файлом из теста
-    pgw::logger::init(
-        LOG_FILE,
-        configServer.getLogLevel()
-    );
+    pgw::logger::init(configServer.getLogLevel());
     EXPECT_TRUE(pgw::logger::isInit());
 
     LOG_INFO("SERVER ============= ");
-    
-    // Инициализируем менеджер базы данных
-    auto dbManager = std::make_shared<pgw::DatabaseManager>("test_integration.db");
-    ASSERT_TRUE(dbManager->initialize());
-    
-    // Инициализируем компоненты
-    pgw::CdrWriter cdrWriter(*dbManager);
 
-    pgw::SessionManager sessionManager(cdrWriter,
+    // Инициализируем менеджер базы данных (единый для CDR и логов)
+    auto dbManager = std::make_shared<pgw::DatabaseManager>(DB_FILE);
+    ASSERT_TRUE(dbManager->initialize());
+
+    // Инициализируем CDR writer
+    // [ File версия ]
+    //auto cdrWriter = pgw::CdrWriterFactory::createFile(CDR_FILE);
+    // [ Database версия ]
+    auto cdrWriter = pgw::CdrWriterFactory::createDatabase(dbManager);
+
+    pgw::SessionManager sessionManager(
+        *cdrWriter,
         configServer.getBlacklist(),
         SESSION_TIMEOUT_S,
         configServer.getGracefulShutdownRate()
@@ -101,6 +101,9 @@ TEST_F(IntegrationTest, FullUdpWork) {
         clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
     });
 
+    // Даем время на доставку пакета (UDP не гарантирует доставку)
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
     // Обрабатываем прием пакета на сервере
     LOG_INFO("SERVER ============= ");
     udpServer.handler();
@@ -109,13 +112,22 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_TRUE(sessionManager.hasSession(imsi));
     EXPECT_EQ(sessionManager.countActiveSession(), 1);
 
+
     // Проверяем что запись в CDR произошла
+    // [ File версия ]
+    /*
     std::ifstream cdrFile(CDR_FILE);
     std::string cdrContent1((std::istreambuf_iterator<char>(cdrFile)),
                            std::istreambuf_iterator<char>());
     EXPECT_NE(cdrContent1.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent1.find(ICdrWriter::SESSION_CREATED), std::string::npos);
+    EXPECT_NE(cdrContent1.find(pgw::ICdrWriter::SESSION_CREATED), std::string::npos);
     cdrFile.close();  // Закрываем файл для следующего чтения
+    */
+    // [ Database версия ]
+    auto records = dbManager->getRecentCdr(10);
+    EXPECT_EQ(records.size(), 1);
+    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
+    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_CREATED);
 
     // Проверяем, что сессии не будут удаляться до истечения таймаута
     sessionManager.cleanTimeoutSessions();
@@ -134,12 +146,20 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_EQ(sessionManager.countActiveSession(), 0);
 
     // Проверяем что запись в CDR произошла
+    // [ File версия ]
+    /*
     cdrFile.open(CDR_FILE);  // Открываем файл заново
     std::string cdrContent2((std::istreambuf_iterator<char>(cdrFile)),
                             std::istreambuf_iterator<char>());
     EXPECT_NE(cdrContent2.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent2.find(ICdrWriter::SESSION_DELETED), std::string::npos);
+    EXPECT_NE(cdrContent2.find(pgw::ICdrWriter::SESSION_DELETED), std::string::npos);
     cdrFile.close();
+    */
+    // [ Database версия ]
+    records = dbManager->getRecentCdr(10);
+    EXPECT_EQ(records.size(), 2);
+    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
+    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_DELETED);
 
     // Даем время на обработку
     std::this_thread::sleep_for(std::chrono::seconds());
@@ -161,12 +181,20 @@ TEST_F(IntegrationTest, FullUdpWork) {
     udpServer.handler();
 
     // Проверяем что запись в CDR произошла
+    // [ File версия ]
+    /*
     cdrFile.open(CDR_FILE);  // Открываем файл заново
     std::string cdrContent3((std::istreambuf_iterator<char>(cdrFile)),
                             std::istreambuf_iterator<char>());
     EXPECT_NE(cdrContent3.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent3.find(ICdrWriter::SESSION_REJECTED), std::string::npos);
+    EXPECT_NE(cdrContent3.find(pgw::ICdrWriter::SESSION_REJECTED), std::string::npos);
     cdrFile.close();
+    */
+    // [ Database версия ]
+    records = dbManager->getRecentCdr(10);
+    EXPECT_EQ(records.size(), 3);
+    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
+    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_REJECTED);
 
     LOG_INFO("CLIENT =============");
     EXPECT_NO_THROW({
@@ -187,12 +215,16 @@ TEST_F(IntegrationTest, FullUdpWork) {
     udpServer.handler();
 
     EXPECT_EQ(sessionManager.countActiveSession(), 4);
+    records = dbManager->getRecentCdr(7);
+    EXPECT_EQ(records.size(), 7);
 
     LOG_INFO("SHUTDOWN ========== ");
     // Запускаем очищение сессий
     sessionManager.gracefulShutdown();
 
     EXPECT_EQ(sessionManager.countActiveSession(), 0);
+    records = dbManager->getRecentCdr(11);
+    EXPECT_EQ(records.size(), 11);
 
     LOG_INFO("TEST DONE ========= ");
     // Останавливаем сервер
