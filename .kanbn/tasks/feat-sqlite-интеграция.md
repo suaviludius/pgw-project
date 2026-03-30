@@ -1,11 +1,12 @@
 ---
 created: 2026-03-23T13:04:05.891Z
-updated: 2026-03-24T21:39:31.911Z
+updated: 2026-03-30T19:47:45.511Z
 assigned: ""
-progress: 0.6
+progress: 0.7
 tags: []
 due: 2026-03-30T00:00:00.000Z
 started: 2026-03-23T00:00:00.000Z
+completed: 2026-03-30T19:47:45.511Z
 ---
 
 # [FEAT] SQLite интеграция
@@ -16,9 +17,11 @@ started: 2026-03-23T00:00:00.000Z
 
 - [x] Спроектировать схему БД
 - [x] Создать SQL скрипт схемы
-- [ ] Реализовать DatabaseManager класс (подключение, инициализация)
-- [x] Переписать CdrWriter на запись в SQLite
-- [ ] Добавить класс EventLogger для записи системных событий
-- [x] Миграция CdrWriter с файлов на SQLite
-- [x] Написать unit-тесты для DatabaseManager
-- [ ] Написать unit-тесты для  EventLogger
+- [x] Переписать CdrWriter на запись в SQLite (CdrFactory + File/Database CdrWriter)
+- [x] Миграция CdrWriter с файлов на SQLite (main + session manager + tests)
+- [x] Написать unit-тест для DatabaseManager
+- [x] Отредактировать integration-тест
+- [x] Переписать logger на запись в SQLite
+- [x] Миграция logger с файлов на SQLite
+- [x] Отредактировать integration-тест
+- [x] Изменить формат конфиг файлов для работы с БД
