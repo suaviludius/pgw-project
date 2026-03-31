@@ -12,7 +12,9 @@ target_sources(
     pgw_server PRIVATE
     Config.cpp
     HttpServer.cpp
-    CdrWriter.cpp
+    FileCdrWriter.cpp
+    DatabaseCdrWriter.cpp
+    CdrWriterFactory.cpp
     SessionManager.cpp
     UdpServer.cpp
 )
@@ -31,6 +33,7 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     httplib::httplib
+    SQLite::SQLite3
 )
 
 configure_file(

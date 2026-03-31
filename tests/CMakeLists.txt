@@ -11,12 +11,14 @@ add_executable(
     test_session_manager
     unit/test_session_manager.cpp
 )
-
 add_executable(
     test_udp_server
     unit/test_udp_server.cpp
 )
-
+add_executable(
+    test_database
+    unit/test_database.cpp
+)
 add_executable(
     test_integration
     integration/test_integration.cpp
@@ -30,6 +32,7 @@ target_sources(
 target_sources(
     test_logger PRIVATE
     ${CMAKE_SOURCE_DIR}/src/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/DatabaseManager.cpp
 )
 target_sources(
     test_session_manager PRIVATE
@@ -43,7 +46,9 @@ target_sources(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_client/Config.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriterFactory.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
     ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
 )
@@ -61,8 +66,6 @@ target_include_directories(
 target_include_directories(
     test_session_manager PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_server
@@ -70,8 +73,6 @@ target_include_directories(
 target_include_directories(
     test_udp_server PRIVATE
     ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
-    # ОБЯЗАТЕЛЬНО! mocks подключать перед include
-    # в нём содержится тестовая версия логера
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_server
@@ -79,6 +80,7 @@ target_include_directories(
 target_include_directories(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/configs
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/pgw_client
     ${CMAKE_SOURCE_DIR}/pgw_server
@@ -94,6 +96,7 @@ target_link_libraries(
 )
 target_link_libraries(
     test_logger PRIVATE
+    pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     spdlog::spdlog
@@ -113,6 +116,13 @@ target_link_libraries(
     GTest::gmock        # Для mock
 )
 target_link_libraries(
+    test_database PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main
+    SQLite::SQLite3
+)
+target_link_libraries(
     test_integration PRIVATE
     pgw_common
     GTest::gtest
@@ -122,3 +132,12 @@ target_link_libraries(
     spdlog::spdlog
     httplib::httplib
 )
+
+# Регистрация тестов в CTest
+enable_testing()
+add_test(NAME test_config COMMAND test_config)
+add_test(NAME test_logger COMMAND test_logger)
+add_test(NAME test_session_manager COMMAND test_session_manager)
+add_test(NAME test_udp_server COMMAND test_udp_server)
+add_test(NAME test_database COMMAND test_database)
+add_test(NAME test_integration COMMAND test_integration)

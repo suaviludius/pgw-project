@@ -36,9 +36,9 @@ void Config::readConfigFile(const std::string& configPath){
     // Присваиваем значения полям конфигурации значениями из файла
     m_udpIp = jsonConfig.value("udp_ip", pgw::constants::server::defaults::UDP_IP); // UdpIp - имя ключа, 0.0.0.0 - значение по умолчанию
     m_udpPort = jsonConfig.value("udp_port", pgw::constants::server::defaults::UDP_PORT);
-    int timeoutSec = jsonConfig.value("session_timeout_sec",
-        pgw::constants::server::defaults::TIMEOUT_SEC);
+    int timeoutSec = jsonConfig.value("session_timeout_sec", pgw::constants::server::defaults::TIMEOUT_SEC);
     m_sessionTimeoutSec = std::chrono::seconds(timeoutSec);
+    m_databaseFile = jsonConfig.value("database_file",pgw::constants::server::defaults::DATABASE_FILE);
     m_cdrFile = jsonConfig.value("cdr_file",pgw::constants::server::defaults::CDR_FILE);
     m_httpPort = jsonConfig.value("http_port",pgw::constants::server::defaults::HTTP_PORT);
     m_gracefulShutdownRate = jsonConfig.value("graceful_shutdown_rate",pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE);
@@ -85,6 +85,7 @@ void Config::setDefaultConfig() {
     m_udpIp = pgw::constants::server::defaults::UDP_IP;
     m_udpPort = pgw::constants::server::defaults::UDP_PORT;
     m_sessionTimeoutSec = std::chrono::seconds(pgw::constants::server::defaults::TIMEOUT_SEC);
+    m_databaseFile = pgw::constants::server::defaults::DATABASE_FILE;
     m_cdrFile = pgw::constants::server::defaults::CDR_FILE;
     m_httpPort = pgw::constants::server::defaults::HTTP_PORT;
     m_gracefulShutdownRate = pgw::constants::server::defaults::GRACEFUL_SHUTDOWN_RATE;

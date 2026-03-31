@@ -2,6 +2,7 @@
   "udp_ip": "0.0.0.0",
   "udp_port": 9000,
   "session_timeout_sec": 30,
+  "database_file": "pgw.db",
   "cdr_file": "cdr.log",
   "http_port": 8080,
   "graceful_shutdown_rate": 10,

@@ -31,6 +31,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+# Поиск системной SQLite3
+find_package(SQLite3 REQUIRED)
+
 # Общие исходники (статическая библиотека)
 add_library(pgw_common STATIC
     src/logger.cpp
@@ -38,6 +41,7 @@ add_library(pgw_common STATIC
     src/TcpSocket.cpp
     src/SocketUtils.cpp
     src/SocketFactory.cpp
+    src/DatabaseManager.cpp
 )
 target_include_directories(pgw_common PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/interfaces
@@ -46,6 +50,7 @@ target_include_directories(pgw_common PUBLIC
 target_link_libraries(
     pgw_common PRIVATE
     spdlog::spdlog
+    SQLite::SQLite3
 )
 
 if(BUILD_CLIENT)
@@ -57,6 +62,8 @@ if(BUILD_SERVER)
 endif()
 
 if(BUILD_TESTS)
+    enable_testing()
+
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY https://github.com/google/googletest.git

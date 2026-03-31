@@ -1,5 +1,5 @@
-#ifndef PGW_CDR_WRITER_H
-#define PGW_CDR_WRITER_H
+#ifndef PGW_FILE_CDR_WRITER_H
+#define PGW_FILE_CDR_WRITER_H
 
 #include "ICdrWriter.h"
 #include "types.h"
@@ -11,12 +11,12 @@
 
 namespace pgw {
 
-class CdrWriter : public ICdrWriter {
+class FileCdrWriter : public ICdrWriter {
     // Файловый поток для записи
     std::ofstream m_file;
 public:
-    explicit CdrWriter(pgw::types::constFilePath_t filename);
-    ~CdrWriter();
+    explicit FileCdrWriter(pgw::types::constFilePath_t filename);
+    ~FileCdrWriter();
 
     // Записывает действие в CDR файл с временной меткой
     // Формат записи: IMSI, ACTION, [TIMESTAMP]
@@ -25,4 +25,4 @@ public:
 
 } // namespace pgw
 
-#endif // PGW_CDR_WRITER_H
+#endif // PGW_FILE_CDR_WRITER_H
