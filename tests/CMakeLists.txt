@@ -133,6 +133,13 @@ target_link_libraries(
     httplib::httplib
 )
 
+# Копируем конфиги в build директорию для интеграционных тестов
+configure_file(
+    ${CMAKE_SOURCE_DIR}/configs/pgw_server.json
+    ${CMAKE_BINARY_DIR}/configs/pgw_server.json
+    COPYONLY
+)
+
 # Регистрация тестов в CTest
 enable_testing()
 add_test(NAME test_config COMMAND test_config)
@@ -140,4 +147,6 @@ add_test(NAME test_logger COMMAND test_logger)
 add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
 add_test(NAME test_database COMMAND test_database)
-add_test(NAME test_integration COMMAND test_integration)
+add_test(NAME test_integration COMMAND test_integration
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
