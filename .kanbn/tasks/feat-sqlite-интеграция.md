@@ -1,12 +1,12 @@
 ---
 created: 2026-03-23T13:04:05.891Z
-updated: 2026-03-30T19:47:45.511Z
+updated: 2026-04-01T13:09:46.337Z
 assigned: ""
-progress: 0.7
+progress: 1
 tags: []
 due: 2026-03-30T00:00:00.000Z
 started: 2026-03-23T00:00:00.000Z
-completed: 2026-03-30T19:47:45.511Z
+completed: 2026-03-30T00:00:00.000Z
 ---
 
 # [FEAT] SQLite интеграция

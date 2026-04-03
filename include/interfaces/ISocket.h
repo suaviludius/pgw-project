@@ -21,9 +21,6 @@ struct ISocket {
 
     // Возвращает локальный адрес сокета
     virtual const sockaddr_in& getAddr() const = 0;
-
-    // Преобразует sockaddr_in в строку "IP:PORT"
-    virtual std::string addrToString(const sockaddr_in& addr) = 0;
 };
 
 #endif // I_SOCKET_H

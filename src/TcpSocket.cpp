@@ -161,8 +161,4 @@ void TcpSocket::send(std::string_view data){
     LOG_TRACE("Sent {} bytes on TCP socket", bytesSent);
 }
 
-std::string TcpSocket::addrToString(const sockaddr_in& addr) {
-    return SocketUtils::addrToString(addr);
-}
-
 } // namespace pgw
