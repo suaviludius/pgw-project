@@ -61,9 +61,6 @@ public:
     // Возвращает адрес сокета
     const sockaddr_in& getAddr() const override { return m_addr; }
 
-    // Преобразует sockaddr_in в читаемую строку формата "IP:PORT"
-    std::string addrToString(const sockaddr_in& addr) override;
-
     // Проверяет, является ли сокет серверным (listening)
     bool isListening() const override { return m_isListening; }
 };

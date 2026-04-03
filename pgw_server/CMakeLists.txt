@@ -10,6 +10,7 @@ set_target_properties(pgw_server PROPERTIES
 
 target_sources(
     pgw_server PRIVATE
+    Application.cpp
     Config.cpp
     HttpServer.cpp
     FileCdrWriter.cpp

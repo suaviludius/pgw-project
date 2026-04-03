@@ -60,7 +60,7 @@ void UdpSocket::bind(pgw::types::constIp_t ip, pgw::types::port_t port){
                                  std::string(strerror(errno)));
     }
 
-    LOG_INFO("UDP Socket bind {}", addrToString(m_addr));
+    LOG_INFO("UDP Socket bind {}", SocketUtils::addrToString(m_addr));
 }
 
 UdpSocket::Packet UdpSocket::receive(){
@@ -82,7 +82,7 @@ UdpSocket::Packet UdpSocket::receive(){
     buffer.resize(bytesReceived);
     std::string data(buffer.begin(), buffer.end());
 
-    LOG_TRACE("Received {} bytes on UDP socket: {}", bytesReceived, addrToString(addr));
+    LOG_TRACE("Received {} bytes on UDP socket: {}", bytesReceived, SocketUtils::addrToString(addr));
 
     return Packet{std::move(data), addr};
 }
@@ -95,16 +95,12 @@ void UdpSocket::send(std::string_view data, const sockaddr_in& addr){
         throw std::runtime_error("UDP Socket send failed: " + std::string(strerror(errno)));
     }
 
-    LOG_TRACE("Sent {} bytes on UDP socket: {}", bytesSent, addrToString(addr));
+    LOG_TRACE("Sent {} bytes on UDP socket: {}", bytesSent, SocketUtils::addrToString(addr));
 }
 
 void UdpSocket::send(std::string_view data, pgw::types::constIp_t ip, pgw::types::port_t port){
     sockaddr_in addr = SocketUtils::createAddress(ip, port);
     send(data, addr);
-}
-
-std::string UdpSocket::addrToString(const sockaddr_in& addr) {
-    return SocketUtils::addrToString(addr);
 }
 
 } // namespace pgw

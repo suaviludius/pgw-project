@@ -2,7 +2,7 @@
 #define MOCK_UDP_SOCKET_H
 
 #include "IUdpSocket.h"
-#include "ISocket.h"
+#include "SocketUtils.h"
 
 #include <gmock/gmock.h>
 
@@ -15,7 +15,6 @@ public:
     MOCK_METHOD(void, close, (), (override));
     MOCK_METHOD(int, getFd, (), (const override));
     MOCK_METHOD(const sockaddr_in&, getAddr, (), (const override));
-    MOCK_METHOD(std::string, addrToString, (const sockaddr_in& addr), (override));
 };
 
 #endif // MOCK_UDP_SOCKET_H
