@@ -20,6 +20,8 @@ constexpr int POLL_TIMEOUT_MS {100};
 // Интервал очистки просроченных сессий в секундах
 constexpr int SESSION_CLEANUP_INTERVAL_S {10};
 
+//TODO: создание объектов стоит реализовать через паттерн Строитель
+
 namespace pgw {
 namespace server {
 
