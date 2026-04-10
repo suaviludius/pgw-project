@@ -13,15 +13,14 @@ struct ISocket {
 
     virtual ~ISocket() = default;
 
-    virtual void bind(pgw::types::constIp_t ip, pgw::types::port_t port) = 0;
-    virtual void send(std::string_view data, const sockaddr_in& addres) = 0;
-    virtual void send(std::string_view data, pgw::types::constIp_t ip, pgw::types::port_t port) = 0;
-    virtual Packet receive() = 0;
+    // Закрывает сокет
     virtual void close() = 0;
 
+    // Возвращает файловый дескриптор сокета (для poll/epoll)
     virtual int getFd() const = 0;
+
+    // Возвращает локальный адрес сокета
     virtual const sockaddr_in& getAddr() const = 0;
-    virtual std::string addrToString(const sockaddr_in& addr) = 0; // Из sockaddr_in делает string c ip:port
 };
 
 #endif // I_SOCKET_H

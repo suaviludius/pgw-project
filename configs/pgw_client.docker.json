@@ -1,0 +1,6 @@
+{
+  "server_ip": "pgw_server",
+  "server_port": 9000,
+  "log_file": "/app/logs/client.log",
+  "log_level": "INFO"
+}

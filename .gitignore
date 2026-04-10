@@ -19,6 +19,9 @@ cmake_install.cmake
 *.log
 logs/
 
+# SQlite
+*.db
+
 # Dependencies (downloaded by CMake)
 _deps/
 external/

@@ -3,7 +3,7 @@
 
 #include "ISessionManager.h"
 #include "ICdrWriter.h"
-#include "ISocket.h"
+#include "IUdpSocket.h"
 
 #include <memory> // unique_ptr
 
@@ -22,7 +22,7 @@ private:
     ISessionManager& m_sessionManager;
 
     // Умный указатель на сокет
-    std::unique_ptr<ISocket> m_socket;
+    std::unique_ptr<IUdpSocket> m_socket;
 
     // IP-адрес сервера
     pgw::types::ip_t m_ip;
@@ -37,7 +37,7 @@ public:
         ISessionManager& sessionManager,
         pgw::types::constIp_t ip,
         pgw::types::port_t port,
-        std::unique_ptr<ISocket> socket = nullptr
+        std::unique_ptr<IUdpSocket> socket = nullptr
     );
     ~UdpServer();
 

@@ -9,7 +9,7 @@
 namespace pgw {
 
 SessionManager::SessionManager(
-    ICdrWriter& cdrWriter,
+    pgw::ICdrWriter& cdrWriter,
     pgw::types::Blacklist& blacklist,
     const pgw::types::seconds_t timeout,
     const pgw::types::rate_t rate)

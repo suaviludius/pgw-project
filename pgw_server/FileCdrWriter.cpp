@@ -1,10 +1,10 @@
-#include "CdrWriter.h"
+#include "FileCdrWriter.h"
 
 #include "logger.h"
 
 namespace pgw {
 
-CdrWriter::CdrWriter(pgw::types::constFilePath_t filename){
+FileCdrWriter::FileCdrWriter(pgw::types::constFilePath_t filename){
     // К сожалению, для open() строка должна содержать '\0' символ
     m_file.open(static_cast<std::string>(filename), std::ios::app);
     if(m_file.is_open()){
@@ -14,7 +14,7 @@ CdrWriter::CdrWriter(pgw::types::constFilePath_t filename){
     LOG_INFO("CDR writer initialized");
 }
 
-CdrWriter::~CdrWriter(){
+FileCdrWriter::~FileCdrWriter(){
     if(m_file.is_open()){
         m_file << "CDR ended\n";
         m_file.close();
@@ -22,7 +22,7 @@ CdrWriter::~CdrWriter(){
     LOG_INFO("CDR writer deleted");
 }
 
-void CdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view action){
+void FileCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view action){
     if (!m_file.is_open()) return;
 
     auto now {std::chrono::system_clock::now()}; // формат для вемени

@@ -1,0 +1,78 @@
+services:
+  # PGW Сервер
+  pgw_server:
+    build:
+      context: .
+      target: runtime
+      args:
+        BUILD_TESTS: "OFF"
+    container_name: pgw_server
+    ports:
+      - "9000:9000/udp"  # UDP порт для сессий
+      - "8080:8080/tcp"  # HTTP API
+    volumes:
+      - ./configs:/app/configs:ro
+      - pgw_logs:/app/logs
+      - pgw_cdr:/app/cdr
+    environment:
+      - TZ=Europe/Moscow
+    restart: unless-stopped
+    command: ["./pgw_server", "configs/pgw_server.docker.json"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/check_subscriber?imsi=001010123456789"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pgw_network
+
+  # PGW Клиент (для тестирования)
+  pgw_client:
+    build:
+      context: .
+      target: runtime
+    container_name: pgw_client
+    depends_on:
+      pgw_server:
+        condition: service_healthy
+    volumes:
+      - ./configs:/app/configs:ro
+    environment:
+      - TZ=Europe/Moscow
+    # Клиент запускается один раз для теста с Docker конфигом
+    command: ["./pgw_client", "configs/pgw_client.docker.json", "001010123456789"]
+    networks:
+      - pgw_network
+
+  # Тестовый прогонщик (опционально)
+  test_runner:
+    build:
+      context: .
+      target: builder
+      args:
+        BUILD_TESTS: "ON"
+    container_name: pgw_tests
+    working_dir: /build
+    volumes:
+      - ./configs:/build/configs:ro
+    command: [
+      "sh", "-c",
+      "./tests/test_config &&
+       ./tests/test_logger &&
+       ./tests/test_session_manager &&
+       ./tests/test_udp_server &&
+       ./tests/test_integration"
+    ]
+    profiles:
+      - test
+    networks:
+      - pgw_network
+
+networks:
+  pgw_network:
+    driver: bridge
+
+volumes:
+  pgw_logs:
+  pgw_cdr:
