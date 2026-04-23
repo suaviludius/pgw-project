@@ -2,42 +2,38 @@ add_executable(pgw_server
     main.cpp
 )
 
-set_target_properties(pgw_server PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
-)
-
 target_sources(
     pgw_server PRIVATE
-    Application.cpp
-    Config.cpp
-    HttpServer.cpp
-    FileCdrWriter.cpp
-    DatabaseCdrWriter.cpp
-    CdrWriterFactory.cpp
-    SessionManager.cpp
-    UdpServer.cpp
+    ../../src/pgw/server/Application.cpp
+    ../../src/pgw/server/Config.cpp
+    ../../src/pgw/server/HttpServer.cpp
+    ../../src/pgw/server/FileCdrWriter.cpp
+    ../../src/pgw/server/DatabaseCdrWriter.cpp
+    ../../src/pgw/server/CdrWriterFactory.cpp
+    ../../src/pgw/server/SessionManager.cpp
+    ../../src/pgw/server/UdpServer.cpp
+)
+
+set_target_properties(pgw_server PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
 target_include_directories(
     pgw_server PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/interfaces
+    ../../include/pgw/server/interfaces
+    ../../include/pgw/server
+    ../../src/pgw/server
+    ../../src/pgw/common
 )
 
 target_link_libraries(
     pgw_server PRIVATE
-    # Библиотека с logger и Socket
     pgw_common
-    nlohmann_json::nlohmann_json
-    spdlog::spdlog
     httplib::httplib
     SQLite::SQLite3
 )
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/../configs/pgw_server.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../configs/pgw_server.json
     COPYONLY
 )
