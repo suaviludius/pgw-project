@@ -14,6 +14,7 @@ namespace pgw {
 
 class DatabaseManager;
 class SessionManager;
+class TcpServer;
 class UdpServer;
 class HttpServer;
 
@@ -61,6 +62,7 @@ private:
     std::shared_ptr<DatabaseManager> m_dbManager;
     std::unique_ptr<ICdrWriter> m_cdrWriter;
     std::unique_ptr<SessionManager> m_sessionManager;
+    std::unique_ptr<TcpServer> m_tcpServer;
     std::unique_ptr<UdpServer> m_udpServer;
     std::unique_ptr<HttpServer> m_httpServer;
 };
