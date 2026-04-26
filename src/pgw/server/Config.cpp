@@ -36,6 +36,8 @@ void Config::readConfigFile(const std::string& configPath){
     // Присваиваем значения полям конфигурации значениями из файла
     m_udpIp = jsonConfig.value("udp_ip", pgw::constants::server::defaults::UDP_IP); // UdpIp - имя ключа, 0.0.0.0 - значение по умолчанию
     m_udpPort = jsonConfig.value("udp_port", pgw::constants::server::defaults::UDP_PORT);
+    m_tcpIp = jsonConfig.value("tcp_ip", pgw::constants::server::defaults::TCP_IP);
+    m_tcpPort = jsonConfig.value("tcp_port", pgw::constants::server::defaults::TCP_PORT);
     int timeoutSec = jsonConfig.value("session_timeout_sec", pgw::constants::server::defaults::TIMEOUT_SEC);
     m_sessionTimeoutSec = std::chrono::seconds(timeoutSec);
     m_databaseFile = jsonConfig.value("database_file",pgw::constants::server::defaults::DATABASE_FILE);
@@ -58,6 +60,11 @@ void Config::validateConfigData(){
     if (!pgw::validation::isValidPort(m_udpPort)) {
         throw std::runtime_error("Invalid UDP port: " +
               std::to_string(m_udpPort));
+    }
+
+    if (!pgw::validation::isValidPort(m_tcpPort)) {
+        throw std::runtime_error("Invalid TCP port: " +
+              std::to_string(m_tcpPort));
     }
 
     if (!pgw::validation::isValidPort(m_httpPort)) {
@@ -84,6 +91,8 @@ void Config::validateConfigData(){
 void Config::setDefaultConfig() {
     m_udpIp = pgw::constants::server::defaults::UDP_IP;
     m_udpPort = pgw::constants::server::defaults::UDP_PORT;
+    m_udpIp = pgw::constants::server::defaults::TCP_IP;
+    m_udpPort = pgw::constants::server::defaults::TCP_PORT;
     m_sessionTimeoutSec = std::chrono::seconds(pgw::constants::server::defaults::TIMEOUT_SEC);
     m_databaseFile = pgw::constants::server::defaults::DATABASE_FILE;
     m_cdrFile = pgw::constants::server::defaults::CDR_FILE;

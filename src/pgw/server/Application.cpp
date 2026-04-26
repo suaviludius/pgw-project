@@ -4,6 +4,7 @@
 #include "CdrWriterFactory.h"
 #include "SessionManager.h"
 #include "SocketFactory.h"
+#include "TcpServer.h"
 #include "UdpServer.h"
 #include "HttpServer.h"
 #include "DatabaseManager.h"
@@ -162,6 +163,14 @@ bool Application::initializeServers() {
         SocketFactory::createUdp()
     );
 
+    // Инициализация TCP сервера
+    m_tcpServer = std::make_unique<TcpServer>(
+        *m_sessionManager,
+        m_dbManager,
+        m_config->getTcpIp(),
+        m_config->getTcpPort()
+    );
+
     // Инициализация HTTP сервера
     m_httpServer = std::make_unique<HttpServer>(
         *m_sessionManager,
@@ -172,26 +181,41 @@ bool Application::initializeServers() {
     // Запуск серверов
     m_udpServer->start();
     m_httpServer->start();
+    m_tcpServer->start();
 
-    LOG_INFO("Servers started: UDP on {}:{}, HTTP on port {}",
-             m_config->getUdpIp(), m_config->getUdpPort(), m_config->getHttpPort());
+    LOG_INFO("Servers started: UDP on {}:{}, HTTP on port {}, TCP on port {}",
+             m_config->getUdpIp(), m_config->getUdpPort(), m_config->getHttpPort(), m_config->getTcpPort());
 
     return true;
 }
 
 void Application::runEventLoop() {
-    // Настройка poll для отслеживания UDP сокета
-    pollfd udpFd{};
-    udpFd.fd = m_udpServer->getFd();
-    udpFd.events = POLLIN;
+    // Настройка poll для отслеживания TCP и UDP сокетов
+    constexpr int MAX_FDS = 3;
+    pollfd fds[MAX_FDS];
+    int nfds = 0;
+
+    // UDP сокет
+    if (m_udpServer && m_udpServer->isRunning()){
+        fds[nfds].fd = m_udpServer->getFd();
+        fds[nfds].events = POLLIN;
+        nfds++;
+    }
+
+    // TCP сокет
+    if (m_tcpServer && m_tcpServer->isRunning()) {
+        fds[nfds].fd = m_tcpServer->getFd();
+        fds[nfds].events = POLLIN;
+        nfds++; // инкрементируем, чтобы использовать как общее число дискрипторов
+    }
 
     // Таймер для периодической очистки просроченных сессий
     auto lastCleanup = std::chrono::steady_clock::now();
 
     // Основной цикл обработки событий
     while (!m_shutdownRequest.load(std::memory_order_acquire)) {
-        // Ожидание событий на UDP сокете с таймаутом
-        int ready = poll(&udpFd, 1, POLL_TIMEOUT_MS);
+        // Ожидание событий на всех сокетах с таймаутом
+        int ready = poll(fds, nfds, POLL_TIMEOUT_MS);
 
         if (ready == -1) {
             if (errno == EINTR) {
@@ -202,8 +226,13 @@ void Application::runEventLoop() {
         }
 
         // Обработка UDP пакетов, если есть данные
-        if (ready > 0 && (udpFd.revents & POLLIN)) {
+        if (ready > 0 && (fds[0].revents & POLLIN)) {
             m_udpServer->handler();
+        }
+
+        // Обработка TCP команд
+        if (ready > 0 && nfds > 1 && (fds[1].revents & POLLIN)) {
+            m_tcpServer->processEvent();
         }
 
         // Периодические задачи
@@ -231,6 +260,9 @@ void Application::shutdown() {
     }
     if (m_udpServer) {
         m_udpServer->stop();
+    }
+    if (m_tcpServer) {
+        m_tcpServer->stop();
     }
 
     LOG_INFO("Graceful shutdown completed");

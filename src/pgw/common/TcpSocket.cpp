@@ -91,6 +91,18 @@ std::optional<std::unique_ptr<ITcpSocket>> TcpSocket::accept(){
         return std::nullopt;
     }
 
+    int flags = fcntl(clientFd, F_GETFL, 0);
+    if(flags < 0){
+        ::close(clientFd);
+        throw std::runtime_error("TCP accept socket failed (get flags): " +
+                                 std::string(strerror(errno)));
+    }
+    if(fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) < 0){
+        ::close(clientFd);
+        throw std::runtime_error("TCP accept socket failed (non-blocking): " +
+                                 std::string(strerror(errno)));
+    }
+
     auto clientSocket = std::make_unique<TcpSocket>(false);
     ::close(clientSocket->m_fd);
     clientSocket->m_fd = clientFd;

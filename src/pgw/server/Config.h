@@ -10,6 +10,8 @@ namespace server {
 class Config{
     pgw::types::ip_t m_udpIp{};
     pgw::types::port_t m_udpPort{};
+    pgw::types::ip_t m_tcpIp{};
+    pgw::types::port_t m_tcpPort{};
     pgw::types::seconds_t m_sessionTimeoutSec{};
     pgw::types::filePath_t m_databaseFile {};
     pgw::types::filePath_t m_cdrFile {};
@@ -31,6 +33,8 @@ public:
 
     pgw::types::constIp_t getUdpIp() const { return m_udpIp; }
     pgw::types::port_t getUdpPort() const { return m_udpPort; }
+    pgw::types::constIp_t getTcpIp() const { return m_tcpIp; }
+    pgw::types::port_t getTcpPort() const { return m_tcpPort; }
     pgw::types::seconds_t getSessionTimeoutSec() const {return m_sessionTimeoutSec; }
     pgw::types::constFilePath_t getDatabaseFile() const { return m_databaseFile; }
     pgw::types::constFilePath_t getCdrFile() const { return m_cdrFile; }

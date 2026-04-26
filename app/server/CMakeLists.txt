@@ -12,6 +12,7 @@ target_sources(
     ../../src/pgw/server/CdrWriterFactory.cpp
     ../../src/pgw/server/SessionManager.cpp
     ../../src/pgw/server/UdpServer.cpp
+    ../../src/pgw/server/TcpServer.cpp
 )
 
 set_target_properties(pgw_server PROPERTIES
