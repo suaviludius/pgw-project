@@ -17,12 +17,11 @@ completedColumns:
 
 ## Todo
 
-- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
-
 ## In Progress
 
 - [test-unit-тесты](tasks/test-unit-тесты.md)
 - [test-integration-тесты](tasks/test-integration-тесты.md)
+- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
 
 ## Done
 
