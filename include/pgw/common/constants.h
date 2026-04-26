@@ -19,6 +19,8 @@ namespace client::defaults {
 namespace server::defaults {
     inline constexpr pgw::types::constIp_t UDP_IP {"0.0.0.0"};
     inline constexpr pgw::types::port_t UDP_PORT {9000};
+    inline constexpr pgw::types::constIp_t TCP_IP {"0.0.0.0"};
+    inline constexpr pgw::types::port_t TCP_PORT {9090};
     inline constexpr pgw::types::port_t HTTP_PORT {8080};
 
     inline constexpr uint64_t TIMEOUT_SEC {30};
