@@ -8,14 +8,12 @@
 
 namespace pgw {
 
-TcpServer::TcpServer(ISessionManager& sessionManager,
-                     std::shared_ptr<DatabaseManager> dbManager,
-                     pgw::types::constIp_t ip,
-                     pgw::types::port_t port)
-try : m_sessionManager{sessionManager},
-      m_dbManager(std::move(dbManager)),
-      m_ip{ip},
+TcpServer::TcpServer(pgw::types::constIp_t ip,
+                     pgw::types::port_t port,
+                     TcpHandler& commandHandler)
+try : m_ip{ip},
       m_port{port},
+      m_commandHandler{commandHandler},
       m_running{false}{
     LOG_INFO("TCP server initialized");
 }
@@ -154,17 +152,46 @@ void TcpServer::handleClientData(int clientFd){
         auto packet = client.socket->receive();
 
         if(packet.data.empty()){
-            // TODO: Как-то узнать жив ли еще соккет или нет?
+            // Проверяем жив ли еще клиент на сокете?
+            char buf[1];
+            if (recv(clientFd, buf, 0, MSG_PEEK) == 0) {
+                removeClient(clientFd);
+            }
             return;
         }
 
+        // Сюда читаются все данные с сокета
+        // это может быть не одно сообщение, а сразу несколько
         client.readBuffer.insert(client.readBuffer.end(), packet.data.begin(), packet.data.end());
 
-        //if(m_commandHandler){
-            //Здесь будет парсинг пакета и выполнение команды
-            // . . .
-            LOG_DEBUG("Received {} bytes from TCP client fd: {}", packet.data.size(), clientFd);
-        //}
+        LOG_DEBUG("Received {} bytes from TCP client fd: {}", packet.data.size(), clientFd);
+
+        // TODO: по хорошему стоит также проверять ввод на неправильные
+        // форматы сообщения, потому что в случае одного такого
+        // программа будет вечно обходить пакеты стороной из-за одной ошибки.
+        // Однако TCP протокол гарантирует, что приложение должно получить
+        // либо все данные целиком, либо не получит их совсем (такая атомарная передача).
+        // Поэтому, пока на этом этапе можно забить на это KISS my ass
+        // Пытаемся десериализовать сообщения
+        while (true) {
+            // Считываем первое сообщение из буффера
+            auto msg = TcpSerializer::deserializer(client.readBuffer);
+            if (!msg.has_value()) {
+                break;  // Недостаточно данных для полного сообщения
+            }
+
+            // Выполняем команду из сообщения
+            auto response = m_commandHandler.handle(*msg);
+
+            // Отправляем ответ на сообщение
+            auto responseData = TcpSerializer::serializer(response);
+            client.socket->send(std::string(responseData.begin(), responseData.end()));
+
+            // Удаляем обработанное сообщение из буфера
+            size_t consumed = sizeof(protocol::MessageHeader) + msg->header.length;
+            client.readBuffer.erase(client.readBuffer.begin(), client.readBuffer.begin() + consumed);
+        }
+
     }
     catch(const std::exception& e){
         LOG_ERROR("Handle client {} data error: {}",clientFd, e.what());

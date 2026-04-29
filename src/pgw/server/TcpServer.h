@@ -1,9 +1,8 @@
 #ifndef PGW_TCP_SERVER_H
 #define PGW_TCP_SERVER_H
 
-#include "ISessionManager.h"
 #include "ITcpSocket.h"
-#include "DatabaseManager.h"
+#include "TcpHandler.h"
 
 #include <memory> // unique_ptr
 #include <unordered_map>
@@ -13,8 +12,6 @@
 
 namespace pgw {
 
-// Обработчик команд, пока не сделан, поэтому просто объявляем
-// class CommandHandler;
 
 class TcpServer{
 private:
@@ -24,14 +21,8 @@ private:
     // Максимальный размер клиентского буффера для записи (значение наугад)
     static constexpr uint32_t CLIENT_WRITE_BUFFER_SIZE = 1500;
 
-    // Ссылка на менеджер сессий (ассоциация)
-    ISessionManager& m_sessionManager;
-
-    // Указатель на раздельное владение базой данный (создается извне)
-    std::shared_ptr<DatabaseManager> m_dbManager;
-
-    // Обработчик команд (создается внутри)
-    //std::unique_ptr<CommandHandler> m_commandHandler;
+    // Обработчик команд (создается извне)
+    TcpHandler& m_commandHandler;
 
     // Умный указатель на слушающий сокет (создаем внутри)
     std::unique_ptr<ITcpSocket> m_socket;
@@ -57,10 +48,9 @@ private:
 
 public:
     explicit TcpServer(
-        ISessionManager& sessionManager,
-        std::shared_ptr<DatabaseManager> dbManager,
         pgw::types::constIp_t ip,
-        pgw::types::port_t port
+        pgw::types::port_t port,
+        TcpHandler& commandHandler
     );
     ~TcpServer();
 
