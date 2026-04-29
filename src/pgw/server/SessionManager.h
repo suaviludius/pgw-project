@@ -15,16 +15,6 @@
 namespace pgw {
 
 class SessionManager : public ISessionManager {
-public:
-    // Структура для хранения данных сессии абонента
-    struct SessionData {
-        // Временная метка создания сессии
-        std::chrono::steady_clock::time_point createdTime;
-    };
-
-    // Тип контейнера для хранения сессий
-    using sessions = std::unordered_map<pgw::types::imsi_t, SessionData>;
-
 private:
     // Ссылка на систему записи CDR (записывает детали сессий)
     pgw::ICdrWriter& m_cdrWriter;
@@ -41,6 +31,12 @@ private:
     // Скорость сессий/секунду для контролируемого удаления
     const pgw::types::rate_t m_shutdownRate;
 
+    // Статистика по обработанным сессиям
+    Statistics m_stats;
+
+    // Начало работы менеджера сессий
+    std::chrono::steady_clock::time_point m_startTime;
+
 public:
     explicit SessionManager(
         pgw::ICdrWriter& cdrWriter,
@@ -50,20 +46,19 @@ public:
     );
     ~SessionManager();
 
-    // Проверяет наличие активной сессии для указанного IMSI
     bool hasSession(const pgw::types::imsi_t& imsi) const override;
 
-    // Добавляет IMSI в черный список
     bool addToBlacklist(const pgw::types::imsi_t& imsi) override;
 
-    // Возвращает текущее количество активных сессий
     size_t countActiveSession() const override;
 
-    // Создает новую сессию для абонента
+    const sessions getActiveSessions() const override {return m_sessions;}
+
     CreateResult createSession(const pgw::types::imsi_t& imsi) override;
 
-    // Удаляет сессию абонента (принудительно)
-    void terminateSession(const pgw::types::imsi_t& imsi);
+    Statistics getStatistics() const override;
+
+    bool terminateSession(const pgw::types::imsi_t& imsi) override;
 
     // Удаляет все сессии, привысившие таймаут
     void cleanTimeoutSessions();

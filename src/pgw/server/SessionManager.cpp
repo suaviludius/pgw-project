@@ -16,7 +16,8 @@ SessionManager::SessionManager(
     : m_cdrWriter{cdrWriter},
       m_blacklist{blacklist},
       m_sessionTimeoutSec{timeout},
-      m_shutdownRate{rate} {
+      m_shutdownRate{rate},
+      m_startTime{std::chrono::steady_clock::now()}{
     LOG_INFO("Session Manager initialized");
 }
 
@@ -42,6 +43,8 @@ bool SessionManager::hasSession(const pgw::types::imsi_t& imsi) const {
 SessionManager::CreateResult SessionManager::createSession(const pgw::types::imsi_t& imsi){
     if(m_blacklist.find(imsi) != m_blacklist.end()){
         m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_REJECTED);
+        m_stats.rejectedSessions++;
+        m_stats.totalSessions++;
         LOG_WARN("Session rejected (blacklisted) for IMSI: {}" , imsi);
         return CreateResult::REJECTED_BLACKLIST;
     }
@@ -62,6 +65,9 @@ SessionManager::CreateResult SessionManager::createSession(const pgw::types::ims
 
         if(inserted){
             m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_CREATED);
+            m_stats.createdSessions++;
+            m_stats.totalSessions++;
+            m_stats.activeSessions = m_sessions.size();
             LOG_INFO("Session created for IMSI: {} ", imsi);
             return CreateResult::CREATED;
         }
@@ -77,7 +83,7 @@ SessionManager::CreateResult SessionManager::createSession(const pgw::types::ims
     }
 }
 
-void SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
+bool SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
     // Ищем сессию в мапе
     auto it = m_sessions.find(imsi);
 
@@ -85,9 +91,13 @@ void SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
     if (it != m_sessions.end()){
         m_sessions.erase(it);
         m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+        m_stats.terminateSessions++;
+        m_stats.activeSessions = m_sessions.size();
         LOG_INFO("SESSION_DELETED imsi: {}",imsi);
+        return true;
     } else {
         LOG_DEBUG("Session not found for removal IMSI: {}" , imsi);
+        return false;
     }
 }
 
@@ -104,6 +114,8 @@ void SessionManager::cleanTimeoutSessions(){
             auto imsi = it->first;      // Сохраняем IMSI перед удалением;   // erase делает текущий it невалидным, поэтому сохраняем
             it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
             m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+            m_stats.expiredSessions++;
+            m_stats.activeSessions = m_sessions.size(); // Так немного дольше, зато надежнее
             LOG_INFO("SESSION_DELETED imsi: {}",imsi);
         } else {
             ++it;
@@ -146,10 +158,24 @@ void SessionManager::gracefulShutdown(){
     }
 
     if (m_sessions.empty()) {
+        m_stats.activeSessions = 0;
         LOG_INFO("Sessions graceful shutdown completed");
     } else {
         LOG_INFO("Sessions graceful shutdown error");
     }
 }
+
+
+// TODO: стоит сделать мьютекс для метода, в случае вынесения
+// TCP и UDP серверов в разные потоки
+SessionManager::Statistics SessionManager::getStatistics() const {
+    Statistics stats = m_stats;
+    // Актуальное значение на момент вызова метода
+    stats.activeSessions = m_sessions.size();
+    stats.uptimeSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+                          std::chrono::steady_clock::now() - m_startTime).count();
+    return stats;
+}
+
 
 } // namespace pgw
