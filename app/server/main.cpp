@@ -1,4 +1,4 @@
-#include "Application.h"
+#include "Server.h"
 
 // Точка входа приложения PGW
 // Занимается парсингом аргументов командной строки, запуск Application
@@ -11,6 +11,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Создание и запуск приложения
-    pgw::server::Application app(configPath);
-    return app.run();
+    pgw::server::Server server(configPath);
+    return server.run();
 }
