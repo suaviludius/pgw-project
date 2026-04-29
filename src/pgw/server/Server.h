@@ -1,5 +1,5 @@
-#ifndef PGW_APPLICATION_H
-#define PGW_APPLICATION_H
+#ifndef PGW_Server_H
+#define PGW_Server_H
 
 #include "types.h"
 #include "ISessionManager.h"
@@ -14,26 +14,27 @@ namespace pgw {
 
 class DatabaseManager;
 class SessionManager;
+class TcpHandler;
 class TcpServer;
 class UdpServer;
 class HttpServer;
 
-// Класс Application управляет жизненным циклом приложения PGW
+// Класс Server управляет жизненным циклом приложения PGW
 // Отвечает за Инициализацию компонентов, запуск основного цикла, graceful shutdown
 namespace server {
 
 class Config;
 
-class Application {
+class Server {
 public:
-    explicit Application(const std::string& configPath);
-    ~Application();
+    explicit Server(const std::string& configPath);
+    ~Server();
 
     // Запрещаем копирование и перемещение (Правило пяти)
-    Application(const Application&) = delete;
-    Application& operator=(const Application&) = delete;
-    Application(Application&&) = delete;
-    Application& operator=(Application&&) = delete;
+    Server(const Server&) = delete;
+    Server& operator=(const Server&) = delete;
+    Server(Server&&) = delete;
+    Server& operator=(Server&&) = delete;
 
     // Запускает приложение (основной цикл обработки событий)
     int run();
@@ -62,6 +63,7 @@ private:
     std::shared_ptr<DatabaseManager> m_dbManager;
     std::unique_ptr<ICdrWriter> m_cdrWriter;
     std::unique_ptr<SessionManager> m_sessionManager;
+    std::unique_ptr<TcpHandler> m_tcpHandler;
     std::unique_ptr<TcpServer> m_tcpServer;
     std::unique_ptr<UdpServer> m_udpServer;
     std::unique_ptr<HttpServer> m_httpServer;
@@ -70,4 +72,4 @@ private:
 } // namespace server
 } // namespace pgw
 
-#endif // PGW_APPLICATION_H
+#endif // PGW_Server_H

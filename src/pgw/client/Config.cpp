@@ -19,8 +19,7 @@ Config::Config(const std::string& configPath){
         m_verification = true;
     }
     catch(const std::exception& e) {
-        std::cerr << std::string("Config initialization failed. ") << e.what() << '\n';
-        std::cerr << "Config set default parameters" << '\n';
+        m_error = std::string("Config initialization failed: ") + e.what();
         m_verification = false;
         setDefaultConfig();
     }

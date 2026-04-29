@@ -1,9 +1,10 @@
-#include "Application.h"
+#include "Server.h"
 #include "Config.h"
 #include "logger.h"
 #include "CdrWriterFactory.h"
 #include "SessionManager.h"
 #include "SocketFactory.h"
+#include "TcpHandler.h"
 #include "TcpServer.h"
 #include "UdpServer.h"
 #include "HttpServer.h"
@@ -24,11 +25,11 @@ constexpr int SESSION_CLEANUP_INTERVAL_S {10};
 namespace pgw {
 namespace server {
 
-Application::Application(const std::string& configPath)
+Server::Server(const std::string& configPath)
     : m_config{std::make_unique<Config>(configPath)} {
 }
 
-Application::~Application() {
+Server::~Server() {
     if (m_udpServer && m_udpServer->isRunning()) {
         m_udpServer->stop();
     }
@@ -40,7 +41,7 @@ Application::~Application() {
     }
 }
 
-int Application::run() {
+int Server::run() {
     try {
         // Проверка валидности конфигурации
         if (!m_config->isValid()) {
@@ -74,7 +75,7 @@ int Application::run() {
             return 1;
         }
 
-        LOG_INFO("Application started successfully");
+        LOG_INFO("Server started successfully");
 
         // Запуск основного цикла обработки событий
         runEventLoop();
@@ -82,7 +83,7 @@ int Application::run() {
         // Graceful shutdown
         shutdown();
 
-        LOG_INFO("Application stopped gracefully");
+        LOG_INFO("Server stopped gracefully");
         return 0;
     }
     catch (const std::exception& e) {
@@ -96,12 +97,13 @@ int Application::run() {
     }
 }
 
-bool Application::initializeLogger() {
+bool Server::initializeLogger() {
     pgw::logger::init(m_config->getLogLevel());
+    pgw::logger::addFileSink(std::string(m_config->getLogFile()));
     return pgw::logger::isInit();
 }
 
-bool Application::initializeDatabase() {
+bool Server::initializeDatabase() {
     m_dbManager = std::make_shared<DatabaseManager>(std::string(m_config->getDatabaseFile()));
 
     if (!m_dbManager->initialize()) {
@@ -114,25 +116,21 @@ bool Application::initializeDatabase() {
     return true;
 }
 
-bool Application::initializeCdrWriter() {
+bool Server::initializeCdrWriter() {
     if (m_dbManager) {
         // Используем базу данных для CDR
         m_cdrWriter = CdrWriterFactory::createDatabase(m_dbManager);
-        // Добавляем Database sink для логирования
-        pgw::logger::addDatabaseSink(m_dbManager);
         LOG_INFO("CDR writer initialized with database backend");
     } else {
         // Используем файл для CDR (fallback)
         m_cdrWriter = CdrWriterFactory::createFile(m_config->getCdrFile());
-        // Добавляем файловый sink для логирования
-        pgw::logger::addFileSink(std::string(m_config->getLogFile()));
         LOG_INFO("CDR writer initialized with file backend");
     }
 
     return true;
 }
 
-bool Application::initializeSessionManager() {
+bool Server::initializeSessionManager() {
     if (!m_cdrWriter) {
         LOG_ERROR("CDR writer not initialized");
         return false;
@@ -149,7 +147,7 @@ bool Application::initializeSessionManager() {
     return true;
 }
 
-bool Application::initializeServers() {
+bool Server::initializeServers() {
     if (!m_sessionManager) {
         LOG_ERROR("Session manager not initialized");
         return false;
@@ -163,19 +161,25 @@ bool Application::initializeServers() {
         SocketFactory::createUdp()
     );
 
-    // Инициализация TCP сервера
-    m_tcpServer = std::make_unique<TcpServer>(
-        *m_sessionManager,
-        m_dbManager,
-        m_config->getTcpIp(),
-        m_config->getTcpPort()
-    );
-
     // Инициализация HTTP сервера
     m_httpServer = std::make_unique<HttpServer>(
         *m_sessionManager,
         m_config->getHttpPort(),
         m_shutdownRequest
+    );
+
+    // Инициализация обработчика TCP команд
+    m_tcpHandler = std::make_unique<TcpHandler>(
+        *m_sessionManager,
+        m_dbManager,
+        m_shutdownRequest
+    );
+
+    // Инициализация TCP сервера
+    m_tcpServer = std::make_unique<TcpServer>(
+        m_config->getTcpIp(),
+        m_config->getTcpPort(),
+        *m_tcpHandler
     );
 
     // Запуск серверов
@@ -189,7 +193,7 @@ bool Application::initializeServers() {
     return true;
 }
 
-void Application::runEventLoop() {
+void Server::runEventLoop() {
     // Настройка poll для отслеживания TCP и UDP сокетов
     constexpr int MAX_FDS = 3;
     pollfd fds[MAX_FDS];
@@ -246,7 +250,7 @@ void Application::runEventLoop() {
     }
 }
 
-void Application::shutdown() {
+void Server::shutdown() {
     LOG_INFO("Starting graceful shutdown...");
 
     // Завершение всех сессий с контролируемой скоростью

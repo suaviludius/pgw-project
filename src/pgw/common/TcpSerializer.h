@@ -3,7 +3,10 @@
 
 #include "protocol.h"
 
+#include <nlohmann/json.hpp>
+
 #include <optional>
+
 
 namespace pgw {
 
@@ -13,13 +16,19 @@ public:
     static std::vector<uint8_t> serializer(const protocol::Message& msg);
 
     // Из бинарного буффера получаем сообщение
+    // Так как в зпросах меньше данных, чем в ответах,
+    // то можно данные вначале считывать в msg и не стесняться
+    // а потом данные из msg.data перевести в JSON формат методом getJsonData(msg)
     static std::optional<protocol::Message> deserializer(const std::vector<uint8_t>& buffer);
 
-    // Из json файла получаем сообщение
-    //static protocol::Message parse(protocol::Command, protocol::Status,jsonData);
-};
+    // Из заголовка и json данных получаем сообщение
+    static protocol::Message createJsonMsg(protocol::Command command,
+                                           protocol::Status status,
+                                           const nlohmann::json& jsonData = nlohmann::json());
 
-// TODO: Стоит реализовать метод parse сообщения из json формата в сообщение
+    // Из сообщения извлекаем json данные
+    static nlohmann::json getJsonData(const protocol::Message& msg);
+};
 
 } // namespace pgw
 

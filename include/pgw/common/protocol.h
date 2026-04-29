@@ -16,6 +16,9 @@ using data_t = uint8_t;     // data
 // Версия протокола
 constexpr version_t PROTOCOL_VERSION = 0x01;
 
+// Минимальный размер пакета
+constexpr size_t MIN_MESSAGE_SIZE = sizeof(version_t) + sizeof(command_t);
+
 // Коды команд (запросы от клиента)
 enum class Command : command_t {
     GET_STATS       = 0x01, // Получить статистику
@@ -23,7 +26,7 @@ enum class Command : command_t {
     GET_CDR         = 0x03, // Получить CDR записи
     START_SESSION   = 0x04, // Cоздать сессию
     STOP_SESSION    = 0x05, // Принудительно завершить сессию
-    SGUTDOWN        = 0x06, // Graceful shutdown
+    SHUTDOWN        = 0x06, // Graceful shutdown
 
     TEST            = 0x77, // Команда проверки (одинокая и не нужная)
 };
@@ -51,8 +54,8 @@ enum class Status : status_t {
 #pragma pack(push,1)
 struct MessageHeader {
     version_t version;
-    command_t command;
-    status_t status;
+    Command command;
+    Status status;
     length_t length;
 };
 #pragma pack(pop)

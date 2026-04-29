@@ -4,7 +4,7 @@ add_executable(pgw_server
 
 target_sources(
     pgw_server PRIVATE
-    ../../src/pgw/server/Application.cpp
+    ../../src/pgw/server/Server.cpp
     ../../src/pgw/server/Config.cpp
     ../../src/pgw/server/HttpServer.cpp
     ../../src/pgw/server/FileCdrWriter.cpp
@@ -12,6 +12,8 @@ target_sources(
     ../../src/pgw/server/CdrWriterFactory.cpp
     ../../src/pgw/server/SessionManager.cpp
     ../../src/pgw/server/UdpServer.cpp
+    ../../src/pgw/common/TcpSerializer.cpp
+    ../../src/pgw/server/TcpHandler.cpp
     ../../src/pgw/server/TcpServer.cpp
 )
 

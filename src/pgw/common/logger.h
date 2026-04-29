@@ -20,9 +20,6 @@ void init(std::string_view logLevel);
 // Добавление файлового sink'а
 void addFileSink(const std::string& logFile);
 
-// Добавление Database sink'а
-void addDatabaseSink(std::shared_ptr<DatabaseManager> dbManager);
-
 // Остановка логгера и сброс всех сообщений
 void shutdown();
 

@@ -5,6 +5,7 @@ add_executable(pgw_client
 target_sources(
     pgw_client PRIVATE
     ../../src/pgw/client/Config.cpp
+    ../../src/pgw/client/Client.cpp
 )
 
 # путь для этого конкретного файла
