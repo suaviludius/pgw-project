@@ -17,14 +17,6 @@ struct CdrRecord {
     std::string timestamp;
 };
 
-// Событие для возврата из БД
-struct EventRecord {
-    std::string level;
-    std::string message;
-    std::string timestamp;
-};
-
-
 // Менеджер базы данных SQLite
 class DatabaseManager {
 public:
@@ -44,14 +36,8 @@ public:
     // Запись CDR записи
     bool writeCdr(std::string_view imsi, std::string_view action);
 
-    // Запись события
-    bool writeLog(std::string_view level, std::string_view message, std::string_view timestamp);
-
     // Получение последних CDR записей
-    std::vector<CdrRecord> getRecentCdr(size_t limit = 100);
-
-    //Получение последних событий
-    std::vector<EventRecord> getRecentEvents(size_t limit = 100);
+    std::vector<CdrRecord> getRecentCdr(size_t limit = READ_CDR_LIMIT);
 
     // Получение количества записей в таблице
     std::optional<int> count(const std::string& table);
@@ -68,10 +54,12 @@ private:
 
     // Prepared statements для быстрой вставки
     sqlite3_stmt* m_stmtWriteCdr = nullptr;
-    sqlite3_stmt* m_stmtWriteLog = nullptr;
 
     // Подготовка statement для запроса
     sqlite3_stmt* prepareStatement(const std::string& sql);
+
+    // Лимит на чтение CDR записей из базы данных
+    static constexpr size_t READ_CDR_LIMIT = 100;
 
     // Очистка ресурсов
     void cleanup();

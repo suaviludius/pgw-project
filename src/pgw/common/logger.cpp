@@ -1,5 +1,4 @@
 #include "logger.h"
-#include "DatabaseSink.h"
 
 #include <spdlog/sinks/rotating_file_sink.h> // Для записи логов в файл
 #include <spdlog/sinks/stdout_color_sinks.h> // Для цветного вывода логов в консоль
@@ -52,18 +51,6 @@ void logger::addFileSink(const std::string& logFile) {
 
     // Логируем факт добавления (через сам логгер)
     LOG_INFO("File sink added: {}", logFile);
-}
-
-
-void logger::addDatabaseSink(std::shared_ptr<DatabaseManager> dbManager) {
-
-    auto db_sink = std::make_shared<DatabaseSink>(dbManager);
-    db_sink->set_pattern(PATTERN);
-
-    logPtr->sinks().push_back(db_sink);
-
-    // Логируем факт добавления
-    LOG_INFO("Database sink added");
 }
 
 
