@@ -13,6 +13,7 @@ class Config{
     pgw::types::filePath_t m_logFile {};
     pgw::types::logLevel_t m_logLevel {};
 
+    std::string m_error{};
     bool m_verification{true};
 
     void readConfigFile(const std::string& confPath);
@@ -27,6 +28,7 @@ public:
     pgw::types::constFilePath_t getLogFile() const { return m_logFile; }
     pgw::types::constLogLevel_t getLogLevel() const { return m_logLevel; }
 
+    std::string_view const getError(){ return m_error; }
     bool isValid() const { return m_verification; }
 };
 
