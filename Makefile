@@ -47,6 +47,7 @@ test:
 	fi
 	@./$(BUILD_DIR)/tests/test_config && \
 		./$(BUILD_DIR)/tests/test_logger && \
+		./$(BUILD_DIR)/tests/test_database && \
 		./$(BUILD_DIR)/tests/test_session_manager && \
 		./$(BUILD_DIR)/tests/test_udp_server && \
 		./$(BUILD_DIR)/tests/test_integration
