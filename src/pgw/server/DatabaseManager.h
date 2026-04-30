@@ -48,6 +48,9 @@ public:
     //Выполнение SQL с возвратом одного значения
     std::optional<std::string> queryValue(const std::string& sql);
 
+    // Лимит на чтение CDR записей из базы данных
+    static constexpr size_t READ_CDR_LIMIT = 100;
+
 private:
     sqlite3* m_db = nullptr;
     std::string m_dbPath;
@@ -57,9 +60,6 @@ private:
 
     // Подготовка statement для запроса
     sqlite3_stmt* prepareStatement(const std::string& sql);
-
-    // Лимит на чтение CDR записей из базы данных
-    static constexpr size_t READ_CDR_LIMIT = 100;
 
     // Очистка ресурсов
     void cleanup();
