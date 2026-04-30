@@ -49,6 +49,7 @@ bool DatabaseManager::initialize() {
     // Открываем или создаем БД
     int rc = sqlite3_open(m_dbPath.c_str(), &m_db);
     if (rc != SQLITE_OK) {
+        m_db = nullptr;
         return false;
     }
 
