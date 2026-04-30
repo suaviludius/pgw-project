@@ -10,7 +10,7 @@ struct LoggerTest : public testing::Test {
     static constexpr const char* LOGGER_FILE {"test_logger.log"};
 
     // Метод, вызываемый перед всеми тестами
-    static void SetUpTestSuite(){
+    static void SetUpTestSuit(){
     }
     // Метод, вызываемый после всех тестов
     static void TearDownTestSuite(){}
