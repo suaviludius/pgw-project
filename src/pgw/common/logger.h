@@ -1,8 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "DatabaseManager.h"
-
 #include <spdlog/spdlog.h>
 
 namespace pgw {
