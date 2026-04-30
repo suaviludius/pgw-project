@@ -8,16 +8,16 @@ add_executable(
     unit/test_logger.cpp
 )
 add_executable(
+    test_database
+    unit/test_database.cpp
+)
+add_executable(
     test_session_manager
     unit/test_session_manager.cpp
 )
 add_executable(
     test_udp_server
     unit/test_udp_server.cpp
-)
-add_executable(
-    test_database
-    unit/test_database.cpp
 )
 add_executable(
     test_integration
@@ -32,7 +32,10 @@ target_sources(
 target_sources(
     test_logger PRIVATE
     ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
-    ${CMAKE_SOURCE_DIR}/src/pgw/common/DatabaseManager.cpp
+)
+target_sources(
+    test_database PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
 )
 target_sources(
     test_session_manager PRIVATE
@@ -56,31 +59,43 @@ target_sources(
 # Подключаем заголовочные файлы
 target_include_directories(
     test_config PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_logger PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_database PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_session_manager PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/server
-    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
 )
 target_include_directories(
     test_udp_server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/server
-    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
 )
 target_include_directories(
     test_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/include/pgw/client
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/client
 )
@@ -98,6 +113,12 @@ target_link_libraries(
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     spdlog::spdlog
+)
+target_link_libraries(
+    test_database PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
 )
 target_link_libraries(
     test_session_manager PRIVATE
