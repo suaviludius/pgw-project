@@ -91,8 +91,8 @@ void Config::validateConfigData(){
 void Config::setDefaultConfig() {
     m_udpIp = pgw::constants::server::defaults::UDP_IP;
     m_udpPort = pgw::constants::server::defaults::UDP_PORT;
-    m_udpIp = pgw::constants::server::defaults::TCP_IP;
-    m_udpPort = pgw::constants::server::defaults::TCP_PORT;
+    m_tcpIp = pgw::constants::server::defaults::TCP_IP;
+    m_tcpPort = pgw::constants::server::defaults::TCP_PORT;
     m_sessionTimeoutSec = std::chrono::seconds(pgw::constants::server::defaults::TIMEOUT_SEC);
     m_databaseFile = pgw::constants::server::defaults::DATABASE_FILE;
     m_cdrFile = pgw::constants::server::defaults::CDR_FILE;

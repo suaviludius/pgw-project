@@ -8,6 +8,7 @@ target_sources(
     ../../src/pgw/server/Config.cpp
     ../../src/pgw/server/HttpServer.cpp
     ../../src/pgw/server/FileCdrWriter.cpp
+    ../../src/pgw/server/DatabaseManager.cpp
     ../../src/pgw/server/DatabaseCdrWriter.cpp
     ../../src/pgw/server/CdrWriterFactory.cpp
     ../../src/pgw/server/SessionManager.cpp

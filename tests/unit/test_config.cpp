@@ -45,8 +45,8 @@ struct ConfigTest : public testing::Test {
 // + Успешное чтение
 // + Неполные данные (значения по умолчанию)
 // + Невалидне данные JSON
-// - Неправильные типы данных
-// - Граничные значения (порты 0, 65535 и т.д.)
+// + Неправильные типы данных
+// + Граничные значения (порты 0, 65535 и т.д.)
 
 TEST_F(ConfigTest, MissingFile){
     // Arrange
@@ -61,8 +61,10 @@ TEST_F(ConfigTest, SuccessfulReading) {
     // Arrange
     // R(raw string - спецсимволы не обрабатываются)
     createTestConfig( R"({
-            "udp_ip": "10.0.0.0",
-            "udp_port": 12345,
+            "udp_ip": "0.0.0.0",
+            "udp_port": 4567,
+            "tcp_ip": "0.0.0.0",
+            "tcp_port": 4321,
             "http_port": 1555,
             "session_timeout_sec": 80,
             "database_file": "file1.db",
@@ -81,8 +83,10 @@ TEST_F(ConfigTest, SuccessfulReading) {
         std::cout << config.getError();
 
         // Assert
-        EXPECT_EQ(config.getUdpIp(), "10.0.0.0");
-        EXPECT_EQ(config.getUdpPort(), 12345);
+        EXPECT_EQ(config.getUdpIp(), "0.0.0.0");
+        EXPECT_EQ(config.getUdpPort(), 4567);
+        EXPECT_EQ(config.getTcpIp(), "0.0.0.0");
+        EXPECT_EQ(config.getTcpPort(), 4321);
         EXPECT_EQ(config.getHttpPort(), 1555);
         EXPECT_EQ(config.getSessionTimeoutSec().count(), 80);
         EXPECT_EQ(config.getDatabaseFile(), "file1.db");
@@ -108,6 +112,8 @@ TEST_F(ConfigTest, UsesDefaultValues) {
         // Assert
         EXPECT_EQ(config.getUdpIp(), pgw::constants::server::defaults::UDP_IP);
         EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
+        EXPECT_EQ(config.getTcpIp(), pgw::constants::server::defaults::TCP_IP);
+        EXPECT_EQ(config.getTcpPort(), pgw::constants::server::defaults::TCP_PORT);
         EXPECT_EQ(config.getHttpPort(), pgw::constants::server::defaults::HTTP_PORT);
         EXPECT_EQ(config.getSessionTimeoutSec().count(), pgw::constants::server::defaults::TIMEOUT_SEC);
         EXPECT_EQ(config.getDatabaseFile(), pgw::constants::server::defaults::DATABASE_FILE);
@@ -119,7 +125,22 @@ TEST_F(ConfigTest, UsesDefaultValues) {
     });
 }
 
-TEST_F(ConfigTest, ThrowInvalidPort) {
+TEST_F(ConfigTest, BlacklistIsNotArray) {
+    // Arrange
+    createTestConfig(R"({
+        "blacklist": "not array"
+    })");
+
+    EXPECT_NO_THROW({
+        pgw::server::Config config(CONFIG_FILE);
+        EXPECT_TRUE(config.isValid());
+        EXPECT_EQ(config.getBlacklist().size(), 0);
+    });
+}
+
+// Тесты валидаторов
+
+TEST_F(ConfigTest, InvalidPort) {
     // Arrange
     createTestConfig(R"({
         "udp_port": 70000  // Невалидный порт
@@ -135,3 +156,28 @@ TEST_F(ConfigTest, ThrowInvalidPort) {
         EXPECT_EQ(config.getUdpPort(), pgw::constants::server::defaults::UDP_PORT);
     });
 }
+
+TEST_F(ConfigTest, InvalidImsiInBlacklist) {
+    // Arrange
+    createTestConfig(R"({
+        "blacklist": [
+            "123",
+            "abc",
+            "012340123401234"
+        ]
+    })");
+
+    pgw::server::Config config(CONFIG_FILE);
+    EXPECT_FALSE(config.isValid());
+}
+
+TEST_F(ConfigTest, InvalidSessionTimeout) {
+    // Arrange
+    createTestConfig(R"({
+        "session_timeout_sec": 0
+    })");
+
+    pgw::server::Config config(CONFIG_FILE);
+    EXPECT_FALSE(config.isValid());
+}
+

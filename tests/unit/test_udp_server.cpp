@@ -190,6 +190,30 @@ TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
     EXPECT_TRUE(server.isRunning());
 }
 
+TEST_F(UdpServerTest, RunWithSessionCreationError) {
+    ISocket::Packet testPacket {IMSI1, ADDR};
+
+    EXPECT_CALL(*mockSocket, bind(IP, PORT))
+        .Times(1);
+
+    EXPECT_CALL(*mockSocket, receive())
+        .WillOnce(testing::Return(testPacket))
+        .WillOnce(testing::Return(ISocket::Packet{}));
+
+    EXPECT_CALL(*mockSessionManager, createSession(IMSI1))
+        .WillOnce(testing::Return(ISessionManager::CreateResult::ERROR));
+
+    EXPECT_CALL(*mockSocket, send("rejected", ADDR))
+        .Times(1);
+
+    pgw::UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
+    // Act
+    server.start();
+    server.handler();
+    // Assert
+    EXPECT_TRUE(server.isRunning());
+}
+
 TEST_F(UdpServerTest, RunWithoutThrows) {
     // Arrange
     EXPECT_CALL(*mockSocket, bind("127.0.0.1", 8080))
@@ -204,4 +228,13 @@ TEST_F(UdpServerTest, RunWithoutThrows) {
     server.start();
     // Assert
     EXPECT_NO_THROW(server.handler()); // Не должно падать при исключении
+}
+
+TEST_F(UdpServerTest, HandlerBeforeStart) {
+    EXPECT_CALL(*mockSocket, receive())
+        .Times(0);
+
+    pgw::UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
+
+    EXPECT_NO_THROW(server.handler()); // Должен дать лог-варнинг и выйти
 }

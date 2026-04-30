@@ -13,7 +13,7 @@ struct LoggerTest : public testing::Test {
     static void SetUpTestSuit(){
     }
     // Метод, вызываемый после всех тестов
-    static void TearDowmTestSuit(){}
+    static void TearDownTestSuite(){}
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {
         // Убедимся, что файла нет

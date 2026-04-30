@@ -56,7 +56,6 @@ target_sources(
     src/pgw/common/TcpSocket.cpp
     src/pgw/common/SocketUtils.cpp
     src/pgw/common/SocketFactory.cpp
-    src/pgw/common/DatabaseManager.cpp
 )
 
 target_include_directories(pgw_common
