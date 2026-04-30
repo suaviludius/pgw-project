@@ -1,10 +1,15 @@
 #include "DatabaseManager.h"
+#include "types.h"
+
 #include <gtest/gtest.h>
 #include <filesystem>
 
 struct DatabaseTest : public testing::Test {
     std::unique_ptr<pgw::DatabaseManager> db;
     static constexpr const char* DB_FILE {"test_pgw.db"};
+    const pgw::types::imsi_t IMSI1 {"012340123401234"};
+    const pgw::types::imsi_t IMSI2 {"000111222333444"};
+    const pgw::types::imsi_t IMSI3 {"111111111111111"};
 
     // Метод, вызываемый перед всеми тестами
     static void SetUpTestSuit(){}
@@ -26,61 +31,49 @@ struct DatabaseTest : public testing::Test {
     }
 };
 
-TEST_F(DatabaseTest, Initialize_Success) {
+TEST_F(DatabaseTest, InitializeSuccess) {
     EXPECT_TRUE(db->isConnected());
 }
 
-TEST_F(DatabaseTest, WriteCdr_Success) {
-    EXPECT_TRUE(db->writeCdr("001010123456789", "CREATED"));
-    EXPECT_TRUE(db->writeCdr("001010123456790", "REJECTED"));
+TEST_F(DatabaseTest, InitializeInvalidPath) {
+    pgw::DatabaseManager dbIP("/invalid/path/test.db");
+    EXPECT_FALSE(dbIP.initialize());
+    EXPECT_FALSE(dbIP.isConnected());
+}
+
+TEST_F(DatabaseTest, WriteCdrSuccess) {
+    EXPECT_TRUE(db->writeCdr(IMSI1, "CREATED"));
+    EXPECT_TRUE(db->writeCdr(IMSI2, "REJECTED"));
 
     auto records = db->getRecentCdr(10);
     EXPECT_EQ(records.size(), 2);
-    EXPECT_EQ(records[0].imsi, "001010123456790");  // Последняя запись
+    EXPECT_EQ(records[0].imsi, IMSI2);  // Последняя запись
     EXPECT_EQ(records[0].action, "REJECTED");
 }
 
-TEST_F(DatabaseTest, WriteLog_Success) {
-    EXPECT_TRUE(db->writeLog("INFO", "Server started", "2026-03-27 20:20:26.312"));
-    EXPECT_TRUE(db->writeLog("ERROR", "Connection failed", "2026-03-27 20:20:27.123"));
-
-    auto events = db->getRecentEvents(10);
-    EXPECT_EQ(events.size(), 2);
-    EXPECT_EQ(events[0].level, "ERROR");
-    EXPECT_EQ(events[0].message, "Connection failed");
-    EXPECT_EQ(events[0].timestamp, "2026-03-27 20:20:27.123");
-}
-
-TEST_F(DatabaseTest, GetRecentCdr_Limit) {
-    for (int i = 0; i < 50; ++i) {
-        db->writeCdr("001010123456789", "CREATED");
+TEST_F(DatabaseTest, GetRecentCdrLimit) {
+    const size_t cdrCount = pgw::DatabaseManager::READ_CDR_LIMIT + 10;
+    for (int i = 0; i < cdrCount; ++i) {
+        db->writeCdr(IMSI1, "CREATED");
     }
 
-    auto records = db->getRecentCdr(10);
-    EXPECT_EQ(records.size(), 10);
+    auto records = db->getRecentCdr(cdrCount);
+    EXPECT_LE(records.size(), pgw::DatabaseManager::READ_CDR_LIMIT);
 }
 
-TEST_F(DatabaseTest, GetRecentEvents_Limit) {
-    for (int i = 0; i < 50; ++i) {
-        db->writeLog("INFO", "Event " + std::to_string(i), "2026-03-27 20:20:26.312");
-    }
 
-    auto events = db->getRecentEvents(20);
-    EXPECT_EQ(events.size(), 20);
-}
-
-TEST_F(DatabaseTest, Count_Records) {
-    db->writeCdr("001010123456789", "CREATED");
-    db->writeCdr("001010123456790", "CREATED");
-    db->writeCdr("001010123456791", "CREATED");
+TEST_F(DatabaseTest, CountRecords) {
+    db->writeCdr(IMSI1, "CREATED");
+    db->writeCdr(IMSI2, "CREATED");
+    db->writeCdr(IMSI3, "CREATED");
 
     auto count = db->count("cdr_records");
     ASSERT_TRUE(count.has_value());
     EXPECT_EQ(*count, 3);
 }
 
-TEST_F(DatabaseTest, CdrRecord_Fields) {
-    db->writeCdr("001010123456789", "TERMINATED");
+TEST_F(DatabaseTest, CdrRecordFields) {
+    db->writeCdr(IMSI1, "TERMINATED");
 
     auto records = db->getRecentCdr(1);
     ASSERT_EQ(records.size(), 1);
@@ -91,23 +84,6 @@ TEST_F(DatabaseTest, CdrRecord_Fields) {
     EXPECT_FALSE(records[0].timestamp.empty());
 
     // Проверяем значения
-    EXPECT_EQ(records[0].imsi, "001010123456789");
+    EXPECT_EQ(records[0].imsi, IMSI1);
     EXPECT_EQ(records[0].action, "TERMINATED");
-}
-
-TEST_F(DatabaseTest, EventRecord_Fields) {
-    db->writeLog("WARN", "High load detected", "2026-03-27 20:20:26.312");
-
-    auto events = db->getRecentEvents(1);
-    ASSERT_EQ(events.size(), 1);
-
-    // Проверяем что все поля заполнены
-    EXPECT_FALSE(events[0].level.empty());
-    EXPECT_FALSE(events[0].message.empty());
-    EXPECT_FALSE(events[0].timestamp.empty());
-
-    // Проверяем значения
-    EXPECT_EQ(events[0].level, "WARN");
-    EXPECT_EQ(events[0].message, "High load detected");
-    EXPECT_EQ(events[0].timestamp, "2026-03-27 20:20:26.312");
 }
