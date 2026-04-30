@@ -93,7 +93,7 @@ bool SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
         m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
         m_stats.terminateSessions++;
         m_stats.activeSessions = m_sessions.size();
-        LOG_INFO("SESSION_DELETED imsi: {}",imsi);
+        LOG_INFO("Session deleted for imsi: {}",imsi);
         return true;
     } else {
         LOG_DEBUG("Session not found for removal IMSI: {}" , imsi);
@@ -151,10 +151,20 @@ void SessionManager::gracefulShutdown(){
             lastDeletionTime = std::chrono::steady_clock::now();
         }
 
+        it = std::next(it);
         // Удаляем сессию
-        it = m_sessions.erase(it);
-        m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
-        LOG_INFO("SESSION_DELETED imsi: {}", imsi);
+        terminateSession(imsi);
+
+        // TODO: До сих пор не знаю как поступить:
+        // 1) сделать перегруженную фукнцию для терминейта
+        // 2) оставить здесь удаление сессии
+        // 3) передавать в терминейт итератор, а не imsi
+        // С дргуой стороны, сложность поиска в unrderd_map O(1),
+        // а вызов этого шатдауна явление редкое, так что может и так пойдет
+
+        //it = m_sessions.erase(it);
+        //m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+        //LOG_INFO("Session deleted for imsi: {}", imsi);
     }
 
     if (m_sessions.empty()) {
