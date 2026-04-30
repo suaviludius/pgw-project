@@ -63,7 +63,7 @@ void UdpServer::stop(){
 // Метод раcсчитан на использование с менеджером poll, epoll, select
 void UdpServer::handler(){
     if(!m_running) {
-        LOG_INFO("UDP server already running");
+        LOG_INFO("UDP server not running");
         return;
     }
 
@@ -102,7 +102,7 @@ void UdpServer::handler(){
 
 bool UdpServer::validateImsi(const std::string& imsi){
     if (!pgw::validation::isValidImsi(imsi)) {
-        LOG_WARN("UDP server receive invalid imsi: ", imsi);
+        LOG_WARN("UDP server receive invalid imsi: {}", imsi);
         return false;
     }
     return true;
