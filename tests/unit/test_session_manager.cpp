@@ -137,6 +137,7 @@ TEST_F(SessionManagerTest, GracefulShutdownSucsess) {
 
     pgw::SessionManager manager {*mockCdrWriter, blacklist, timeout, rate};
     pgw::SessionManager::CreateResult result;
+
     // Создаем 10 сессий
     for(int i = 0; i < 10; ++i) {
         std::string imsi {std::to_string(i)};
@@ -145,7 +146,98 @@ TEST_F(SessionManagerTest, GracefulShutdownSucsess) {
         EXPECT_TRUE(manager.hasSession(imsi));
         EXPECT_EQ(manager.countActiveSession(), i+1);
     }
+
     EXPECT_EQ(manager.countActiveSession(), 10);
+
     manager.gracefulShutdown(); // Удаляем сессии
+
     EXPECT_EQ(manager.countActiveSession(), 0);
+}
+
+
+TEST_F(SessionManagerTest, GetStatistics) {
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_CREATED))
+    .Times(2);
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_DELETED))
+    .Times(1);
+    pgw::SessionManager manager(*mockCdrWriter, blacklist, timeout, rate);
+
+    auto stats = manager.getStatistics();
+    EXPECT_EQ(stats.createdSessions, 0);
+    EXPECT_EQ(stats.activeSessions, 0);
+
+    manager.createSession(IMSI1);
+    manager.createSession(IMSI2);
+    manager.terminateSession(IMSI1);
+
+    stats = manager.getStatistics();
+    EXPECT_EQ(stats.createdSessions, 2);
+    EXPECT_EQ(stats.activeSessions, 1);
+    EXPECT_EQ(stats.terminateSessions, 1);
+    EXPECT_EQ(stats.expiredSessions, 0);
+}
+
+TEST_F(SessionManagerTest, GetShutdownStatistics) {
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_CREATED))
+    .Times(2);
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_DELETED))
+    .Times(2);
+    pgw::SessionManager manager(*mockCdrWriter, blacklist, timeout, rate);
+
+    auto stats = manager.getStatistics();
+    EXPECT_EQ(stats.createdSessions, 0);
+    EXPECT_EQ(stats.activeSessions, 0);
+
+    manager.createSession(IMSI1);
+    manager.createSession(IMSI2);
+
+    manager.gracefulShutdown();
+
+    stats = manager.getStatistics();
+    EXPECT_EQ(stats.terminateSessions, 2);
+    EXPECT_EQ(stats.activeSessions, 0);
+}
+
+TEST_F(SessionManagerTest, GetTimeoutStatistics) {
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_CREATED))
+    .Times(2);
+    EXPECT_CALL(*mockCdrWriter, writeAction(testing::_, pgw::ICdrWriter::SESSION_DELETED))
+    .Times(2);
+    pgw::SessionManager manager(*mockCdrWriter, blacklist, timeout, rate);
+
+    auto stats = manager.getStatistics();
+    EXPECT_EQ(stats.createdSessions, 0);
+    EXPECT_EQ(stats.activeSessions, 0);
+
+    manager.createSession(IMSI1);
+    manager.createSession(IMSI2);
+
+    // Дождемся таймаута сессии и проверим статистику
+    std::chrono::steady_clock::time_point createdTime {std::chrono::steady_clock::now()};
+    while((std::chrono::steady_clock::now() - createdTime) < timeout){
+        // Ждем, пока время жизни сессий не истечет
+    }
+    manager.cleanTimeoutSessions();
+
+    stats = manager.getStatistics();
+    EXPECT_EQ(stats.expiredSessions, 2);
+    EXPECT_GE(stats.uptimeSeconds, timeout.count());
+}
+
+TEST_F(SessionManagerTest, AddToBlacklist) {
+    pgw::SessionManager manager(*mockCdrWriter, blacklist, timeout, rate);
+
+    EXPECT_TRUE(manager.addToBlacklist(IMSI1));
+    EXPECT_FALSE(manager.addToBlacklist(IMSI1)); // Да-да, еще разочек
+    EXPECT_FALSE(manager.addToBlacklist("1234")); // Что будет, если дать неправильный imsi?
+
+    // Проверка, что blacklist работает
+    EXPECT_CALL(*mockCdrWriter, writeAction(IMSI1, pgw::ICdrWriter::SESSION_REJECTED));
+    auto result = manager.createSession(IMSI1);
+    EXPECT_EQ(result, pgw::SessionManager::CreateResult::REJECTED_BLACKLIST);
+}
+
+TEST_F(SessionManagerTest, GracefulShutdownEmpty) {
+    pgw::SessionManager manager(*mockCdrWriter, blacklist, timeout, rate);
+    EXPECT_NO_THROW(manager.gracefulShutdown());
 }
