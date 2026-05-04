@@ -1,4 +1,5 @@
 #include "TcpServer.h"
+#include "TcpSerializer.h"
 #include "SocketFactory.h"
 #include "logger.h"
 #include "validation.h"
@@ -10,7 +11,7 @@ namespace pgw {
 
 TcpServer::TcpServer(pgw::types::constIp_t ip,
                      pgw::types::port_t port,
-                     TcpHandler& commandHandler)
+                     ITcpHandler& commandHandler)
 try : m_ip{ip},
       m_port{port},
       m_commandHandler{commandHandler},
@@ -169,9 +170,8 @@ void TcpServer::handleClientData(int clientFd){
         // TODO: по хорошему стоит также проверять ввод на неправильные
         // форматы сообщения, потому что в случае одного такого
         // программа будет вечно обходить пакеты стороной из-за одной ошибки.
-        // Однако TCP протокол гарантирует, что приложение должно получить
-        // либо все данные целиком, либо не получит их совсем (такая атомарная передача).
-        // Поэтому, пока на этом этапе можно забить на это KISS my ass
+        // Но пока на этом этапе можно забить на это и верить что клиент всегда
+        // будет формировать правильную структуру сообщения (+ KISS ~ my ass)
         // Пытаемся десериализовать сообщения
         while (true) {
             // Считываем первое сообщение из буффера

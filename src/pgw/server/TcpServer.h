@@ -2,7 +2,7 @@
 #define PGW_TCP_SERVER_H
 
 #include "ITcpSocket.h"
-#include "TcpHandler.h"
+#include "ITcpHandler.h"
 
 #include <memory> // unique_ptr
 #include <unordered_map>
@@ -22,7 +22,7 @@ private:
     static constexpr uint32_t CLIENT_WRITE_BUFFER_SIZE = 1500;
 
     // Обработчик команд (создается извне)
-    TcpHandler& m_commandHandler;
+    ITcpHandler& m_commandHandler;
 
     // Умный указатель на слушающий сокет (создаем внутри)
     std::unique_ptr<ITcpSocket> m_socket;
@@ -50,7 +50,7 @@ public:
     explicit TcpServer(
         pgw::types::constIp_t ip,
         pgw::types::port_t port,
-        TcpHandler& commandHandler
+        ITcpHandler& commandHandler
     );
     ~TcpServer();
 
