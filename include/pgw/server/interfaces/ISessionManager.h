@@ -6,6 +6,9 @@
 #include <unordered_map>
 
 struct ISessionManager {
+
+    virtual ~ISessionManager() = default;
+
     // Результаты выполнения запроса на создание сессии
     enum class CreateResult {
         CREATED,
