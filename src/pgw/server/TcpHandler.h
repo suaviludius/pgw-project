@@ -1,6 +1,7 @@
 #ifndef PGW_TCP_HANDLER_H
 #define PGW_TCP_HANDLER_H
 
+#include "ITcpHandler.h"
 #include "TcpSerializer.h"
 #include "ISessionManager.h"
 #include "DatabaseManager.h"
@@ -13,7 +14,7 @@
 namespace pgw {
 
 
-class TcpHandler {
+class TcpHandler : public ITcpHandler {
 private:
     // Ссылка на менеджер сессий (ассоциация)
     ISessionManager& m_sessionManager;
@@ -30,7 +31,7 @@ public:
                std::atomic<bool>& shutdownRequest);
     ~TcpHandler() = default;
 
-    protocol::Message handle(const protocol::Message& request);
+    protocol::Message handle(const protocol::Message& request) override;
 
 private:
     protocol::Message handleGetStats();
