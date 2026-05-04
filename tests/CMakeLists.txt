@@ -20,6 +20,14 @@ add_executable(
     unit/test_udp_server.cpp
 )
 add_executable(
+    test_tcp_serializer
+    unit/test_tcp_serializer.cpp
+)
+add_executable(
+    test_tcp_server
+    unit/test_tcp_server.cpp
+)
+add_executable(
     test_integration
     integration/test_integration.cpp
 )
@@ -44,6 +52,14 @@ target_sources(
 target_sources(
     test_udp_server PRIVATE
     ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+)
+target_sources(
+    test_tcp_serializer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+)
+target_sources(
+    test_tcp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
 )
 target_sources(
     test_integration PRIVATE
@@ -90,6 +106,19 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
+    test_tcp_serializer PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+)
+target_include_directories(
+    test_tcp_server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
@@ -129,6 +158,21 @@ target_link_libraries(
 )
 target_link_libraries(
     test_udp_server PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+)
+target_link_libraries(
+    test_tcp_serializer PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+    nlohmann_json::nlohmann_json
+)
+target_link_libraries(
+    test_tcp_server PRIVATE
     pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
