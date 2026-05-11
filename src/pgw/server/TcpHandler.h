@@ -2,9 +2,9 @@
 #define PGW_TCP_HANDLER_H
 
 #include "ITcpHandler.h"
-#include "TcpSerializer.h"
 #include "ISessionManager.h"
-#include "DatabaseManager.h"
+#include "IDatabaseManager.h"
+#include "TcpSerializer.h"
 
 #include <atomic>
 
@@ -20,14 +20,14 @@ private:
     ISessionManager& m_sessionManager;
 
     // Указатель на раздельное владение базой данный (создается извне)
-    std::shared_ptr<DatabaseManager> m_dbManager;
+    std::shared_ptr<IDatabaseManager> m_dbManager;
 
     // Ссылка на атомик завершения сессии
     std::atomic<bool>& m_shutdownRequest;
 
 public:
     TcpHandler(ISessionManager& sessionManager,
-               std::shared_ptr<DatabaseManager> dbManager,
+               std::shared_ptr<IDatabaseManager> dbManager,
                std::atomic<bool>& shutdownRequest);
     ~TcpHandler() = default;
 
