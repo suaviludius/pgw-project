@@ -5,7 +5,7 @@
 namespace pgw {
 
 TcpHandler::TcpHandler(ISessionManager& sessionManager,
-               std::shared_ptr<DatabaseManager> dbManager,
+               std::shared_ptr<IDatabaseManager> dbManager,
                std::atomic<bool>& shutdownRequest)
             :  m_sessionManager{sessionManager},
                m_dbManager{std::move(dbManager)},
@@ -98,7 +98,7 @@ protocol::Message TcpHandler::handleGetCdr(const nlohmann::json& params) {
         return TcpSerializer::createJsonMsg(protocol::Command::GET_CDR,protocol::Status::ERROR);
     }
 
-    size_t limit;
+    size_t limit = pgw::IDatabaseManager::READ_CDR_LIMIT;
     if (params.contains("limit") && params["limit"].is_number()) {
         limit = params["limit"].get<size_t>();
     }
@@ -125,6 +125,8 @@ protocol::Message TcpHandler::handleGetCdr(const nlohmann::json& params) {
     return TcpSerializer::createJsonMsg(protocol::Command::GET_CDR, protocol::Status::OK, response);
 }
 
+// TODO: вынести значения в JSON в структуры, чтобы заносить их как
+// переменные, а не магические строки
 
 protocol::Message TcpHandler::handleStartSession(const nlohmann::json& params) {
     // Проверяем наличие правильного IMSI
@@ -135,7 +137,7 @@ protocol::Message TcpHandler::handleStartSession(const nlohmann::json& params) {
     }
 
     if (imsi.empty() || !validation::isValidImsi(imsi)){
-        return TcpSerializer::createJsonMsg(protocol::Command::START_SESSION,protocol::Status::INVALID_PARAMS); 
+        return TcpSerializer::createJsonMsg(protocol::Command::START_SESSION,protocol::Status::INVALID_PARAMS);
     }
 
     // Создаём сессию
@@ -170,7 +172,7 @@ protocol::Message TcpHandler::handleStartSession(const nlohmann::json& params) {
 
 
 protocol::Message TcpHandler::handleStopSession(const nlohmann::json& params) {
-        // Проверяем наличие правильного IMSI
+    // Проверяем наличие правильного IMSI
     std::string imsi;
 
     if (params.contains("imsi") || params["imsi"].is_string()) {

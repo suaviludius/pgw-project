@@ -1,5 +1,5 @@
 #ifndef TCP_SERIALIZER_H
-#define TCP_SERIALISER_H
+#define TCP_SERIALIZER_H
 
 #include "protocol.h"
 

@@ -1,11 +1,6 @@
-#include "logger.h"
-#include "pgw_client/Config.h"
-#include "pgw_server/Config.h"
-#include "CdrWriterFactory.h"
-#include "SessionManager.h"
-#include "SocketFactory.h"
-#include "UdpServer.h"
-#include "HttpServer.h"
+#include "Client.h"
+#include "Server.h"
+#include "ISessionManager.h"
 
 #include <gtest/gtest.h>
 
@@ -16,12 +11,13 @@
 
 
 struct IntegrationTest : public testing::Test {
+    // Набор путей к файлам
     static constexpr const char* CLIENT_CONFIG_FILE {"configs/pgw_client.json"};
     static constexpr const char* SERVER_CONFIG_FILE {"configs/pgw_server.json"};
     static constexpr const char* CDR_FILE {"test_integration_cdr.log"};
     static constexpr const char* LOG_FILE {"test_integration.log"};
     static constexpr const char* DB_FILE {"test_integration.db"};
-    const pgw::types::seconds_t SESSION_TIMEOUT_S {3}; // Создаем свой таймаут для сессии, чтобы долго не ждать
+    // Набор тестовых констант
     const pgw::types::imsi_t IMSI1 {"012340123401234"};
     const pgw::types::imsi_t IMSI2 {"000000000000001"};
     const pgw::types::imsi_t IMSI3 {"000000000000002"};
@@ -29,6 +25,7 @@ struct IntegrationTest : public testing::Test {
     const pgw::types::imsi_t IMSI5 {"000000000000004"};
     const pgw::types::imsi_t IMSI6 {"000000000000005"};
     const pgw::types::imsi_t IMSI_BLACKLISTED {"101010101010101"};
+    const pgw::types::seconds_t SESSION_TIMEOUT_S {3}; // Создаем свой таймаут для сессии, чтобы долго не ждать
 
     // Метод, вызываемый перед всеми тестами
     static void SetUpTestSuite(){}
@@ -47,65 +44,24 @@ struct IntegrationTest : public testing::Test {
 
 
 TEST_F(IntegrationTest, FullUdpWork) {
-    // Загружаем конфиг сервера
-    pgw::server::Config configServer(SERVER_CONFIG_FILE);
-    EXPECT_TRUE(configServer.isValid());
 
-    // Инициализируем логгер с уровнем из конфига, но файлом из теста
-    pgw::logger::init(configServer.getLogLevel());
-    EXPECT_TRUE(pgw::logger::isInit());
+    pgw::server::Server server(SERVER_CONFIG_FILE);
+    server.run();
 
-    LOG_INFO("SERVER ============= ");
+    // Создание и запуск приложения
+    pgw::client::Client client(CLIENT_CONFIG_FILE,IMSI1);
+    client.run();
 
-    // Инициализируем менеджер базы данных (единый для CDR и логов)
-    auto dbManager = std::make_shared<pgw::DatabaseManager>(DB_FILE);
-    ASSERT_TRUE(dbManager->initialize());
+    // TODO: сделать два потока и в них проводить манипуляции
 
-    // Инициализируем CDR writer
-    // [ File версия ]
-    //auto cdrWriter = pgw::CdrWriterFactory::createFile(CDR_FILE);
-    // [ Database версия ]
-    auto cdrWriter = pgw::CdrWriterFactory::createDatabase(dbManager);
-
-    pgw::SessionManager sessionManager(
-        *cdrWriter,
-        configServer.getBlacklist(),
-        SESSION_TIMEOUT_S,
-        configServer.getGracefulShutdownRate()
-    );
-
-    pgw::UdpServer udpServer(sessionManager,
-        configServer.getUdpIp(),
-        configServer.getUdpPort()
-    );
-
-    // Запускаем сервер
-    udpServer.start();
     EXPECT_TRUE(udpServer.isRunning());
 
-    // Даем время на обработку
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    LOG_INFO("CLIENT =============");
-    // Загружаем конфиг сервера
-    pgw::client::Config configClient(CLIENT_CONFIG_FILE);
     EXPECT_TRUE(configClient.isValid());
 
-    // Создаем тестовый клиентский сокет
-    auto clientSocket = pgw::SocketFactory::createUdp();
-
-    // Отправляем IMSI
-    std::string imsi = IMSI1;
-    LOG_INFO("Send imsi: {}", imsi);
     EXPECT_NO_THROW({
         clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
     });
 
-    // Даем время на доставку пакета (UDP не гарантирует доставку)
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-    // Обрабатываем прием пакета на сервере
-    LOG_INFO("SERVER ============= ");
     udpServer.handler();
 
     // Проверяем что сессия создана и она одна

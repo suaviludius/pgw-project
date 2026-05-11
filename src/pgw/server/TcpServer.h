@@ -2,7 +2,7 @@
 #define PGW_TCP_SERVER_H
 
 #include "ITcpSocket.h"
-#include "TcpHandler.h"
+#include "ITcpHandler.h"
 
 #include <memory> // unique_ptr
 #include <unordered_map>
@@ -22,7 +22,7 @@ private:
     static constexpr uint32_t CLIENT_WRITE_BUFFER_SIZE = 1500;
 
     // Обработчик команд (создается извне)
-    TcpHandler& m_commandHandler;
+    ITcpHandler& m_commandHandler;
 
     // Умный указатель на слушающий сокет (создаем внутри)
     std::unique_ptr<ITcpSocket> m_socket;
@@ -47,10 +47,18 @@ private:
     std::unordered_map<int, ClientContext> m_clients;
 
 public:
-    explicit TcpServer(
+    // Продакшн коснтруктор
+    TcpServer(
         pgw::types::constIp_t ip,
         pgw::types::port_t port,
-        TcpHandler& commandHandler
+        ITcpHandler& commandHandler
+    );
+    // Тестовый конструктор
+    TcpServer(
+        pgw::types::constIp_t ip,
+        pgw::types::port_t port,
+        ITcpHandler& commandHandler,
+        std::unique_ptr<ITcpSocket> socket
     );
     ~TcpServer();
 
@@ -68,14 +76,13 @@ public:
     // TODO: Заменить в Udp Server handler() на такое же название: processEvent()
     void processEvent();
 
-    //  Проверяет, запущен ли сервер
+    // Проверяет, запущен ли сервер
     bool isRunning() const {return m_running;}
 
     // Возвращает файловый дескриптор сокета для использования с poll/epoll
-    int getFd() const {return m_socket->getFd();};
+    int getFd() const {return m_socket->getFd();}
 
-    // Проверяет длину, допустимые символы imsi
-    bool validateImsi(const std::string& imsi);
+    size_t getClientsCount() { return m_clients.size();}
 
 private:
     // Подключение новых клиентов
