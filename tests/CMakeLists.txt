@@ -24,6 +24,10 @@ add_executable(
     unit/test_tcp_serializer.cpp
 )
 add_executable(
+    test_tcp_handler
+    unit/test_tcp_handler.cpp
+)
+add_executable(
     test_tcp_server
     unit/test_tcp_server.cpp
 )
@@ -58,7 +62,13 @@ target_sources(
     ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
 )
 target_sources(
+    test_tcp_handler PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+)
+target_sources(
     test_tcp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
 )
 target_sources(
@@ -109,6 +119,14 @@ target_include_directories(
     test_tcp_serializer PRIVATE
     ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/common
+)
+target_include_directories(
+    test_tcp_handler PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_tcp_server PRIVATE
@@ -172,6 +190,13 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
 )
 target_link_libraries(
+    test_tcp_handler PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+)
+target_link_libraries(
     test_tcp_server PRIVATE
     pgw_common
     GTest::gtest
@@ -207,7 +232,9 @@ configure_file(
 enable_testing()
 add_test(NAME test_config COMMAND test_config)
 add_test(NAME test_logger COMMAND test_logger)
+add_test(NAME test_database COMMAND test_database)
 add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
-add_test(NAME test_database COMMAND test_database)
+add_test(NAME test_tcp_serializer COMMAND test_tcp_serializer)
+add_test(NAME test_tcp_handler COMMAND test_tcp_handler)
 add_test(NAME test_integration COMMAND test_integration WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
