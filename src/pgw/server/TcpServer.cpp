@@ -2,7 +2,6 @@
 #include "TcpSerializer.h"
 #include "SocketFactory.h"
 #include "logger.h"
-#include "validation.h"
 
 #include <cstring>
 #include <unistd.h> // close()
@@ -15,6 +14,7 @@ TcpServer::TcpServer(pgw::types::constIp_t ip,
 try : m_ip{ip},
       m_port{port},
       m_commandHandler{commandHandler},
+      m_socket{SocketFactory::createTcp(true)},
       m_running{false}{
     LOG_INFO("TCP server initialized");
 }
@@ -23,6 +23,31 @@ catch(const std::exception& e){
     // Пробрасываем исключение дальше
     throw std::runtime_error("TCP server initialization failed");
 }
+
+//TODO: возможно слишком много информации в пробрасываемыз исключениях,
+// кажется достаточно выписать в LOG_ERROR, а дальше кинуть пустое throw
+// В UdpServer то же самое
+
+TcpServer::TcpServer(pgw::types::constIp_t ip,
+                     pgw::types::port_t port,
+                     ITcpHandler& commandHandler,
+                     std::unique_ptr<ITcpSocket> socket)
+try : m_ip{ip},
+      m_port{port},
+      m_commandHandler{commandHandler},
+      m_socket{std::move(socket)},
+      m_running{false}{
+    if (!m_socket) {
+        throw std::invalid_argument("TCP socket cannot be nullptr");
+    }
+    LOG_INFO("TCP test server initialized");
+}
+catch(const std::exception& e){
+    LOG_ERROR("TCP test server initialization filed: {}", e.what());
+    // Пробрасываем исключение дальше
+    throw std::runtime_error("TCP test server initialization failed");
+}
+
 
 TcpServer::~TcpServer(){
     if(m_running){
@@ -39,7 +64,6 @@ void TcpServer::start(){
 
     try{
         LOG_INFO("Starting TCP server ...");
-        m_socket = SocketFactory::createTcp(true);  // isListening = true
         m_socket->bind(m_ip,m_port);
         m_running = true;
     }
@@ -130,8 +154,7 @@ void TcpServer::acceptNewClient(){
             client.socket = std::move(clientSocket.value());
             client.readBuffer.reserve(CLIENT_READ_BUFFER_SIZE);
             client.writeBuffer.reserve(CLIENT_WRITE_BUFFER_SIZE);
-
-            auto clientFd = (*clientSocket)->getFd();
+            auto clientFd = client.socket->getFd();
             m_clients[clientFd] = std::move(client);
 
             // Информация про ip : port выводится при accept() сокетом, а тут подытожим
@@ -155,6 +178,7 @@ void TcpServer::handleClientData(int clientFd){
         if(packet.data.empty()){
             // Проверяем жив ли еще клиент на сокете?
             char buf[1];
+            // MSG_PEEK вернет 0, если соединение закрыто
             if (recv(clientFd, buf, 0, MSG_PEEK) == 0) {
                 removeClient(clientFd);
             }
@@ -205,7 +229,6 @@ void TcpServer::removeClient(int clientFd){
         if (it->second.socket) {
             it->second.socket->close();
         }
-        close(clientFd);
         m_clients.erase(it);
         LOG_DEBUG("TCP client removed, fd: {}", clientFd);
     }
