@@ -20,6 +20,9 @@ private:
     // Соккет для ообщения (создается один раз в конструкторе)
     std::unique_ptr<IUdpSocket> m_socket;
 
+    // Ответ от сервера
+    std::string m_response;
+
     // Основной цикл обработки событий
     void runEventLoop();
 
@@ -35,6 +38,9 @@ public:
     Client& operator=(const Client&) = delete;
     Client(Client&&) = delete;
     Client& operator=(Client&&) = delete;
+
+    // Возвращаем ответ от сервера
+    const std::string& getResponse() const { return m_response; }
 
     // Запускает приложение (основной цикл обработки событий)
     int run();

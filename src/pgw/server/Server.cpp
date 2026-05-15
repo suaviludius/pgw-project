@@ -1,14 +1,7 @@
 #include "Server.h"
-#include "Config.h"
 #include "logger.h"
 #include "CdrWriterFactory.h"
-#include "SessionManager.h"
 #include "SocketFactory.h"
-#include "TcpHandler.h"
-#include "TcpServer.h"
-#include "UdpServer.h"
-#include "HttpServer.h"
-#include "DatabaseManager.h"
 
 #include <poll.h>
 #include <chrono>
@@ -30,14 +23,14 @@ Server::Server(const std::string& configPath)
 }
 
 Server::~Server() {
+    if (m_tcpServer && m_tcpServer->isRunning()) {
+        m_tcpServer->stop();
+    }
     if (m_udpServer && m_udpServer->isRunning()) {
         m_udpServer->stop();
     }
     if (m_httpServer && m_httpServer->isRunning()) {
         m_httpServer->stop();
-    }
-    if (pgw::logger::isInit()) {
-        pgw::logger::shutdown();
     }
 }
 

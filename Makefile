@@ -41,19 +41,19 @@ client:
 # Запуск тестов (Проверяем была ли сборка с тестами)
 # && форма даст всем тестам выполниться, даже если один упал
 test:
-	@if [ ! -f "$(BUILD_DIR)/tests/test_config" ]; then \
+	@if [ ! -f "$(BUILD_DIR)/bin/test_config" ]; then \
 		echo "Тесты не найдены! Соберите с BUILD_TESTS=ON"; \
 		exit 1; \
 	fi
-	@./$(BUILD_DIR)/tests/test_config && \
-		./$(BUILD_DIR)/tests/test_logger && \
-		./$(BUILD_DIR)/tests/test_database && \
-		./$(BUILD_DIR)/tests/test_session_manager && \
-		./$(BUILD_DIR)/tests/test_udp_server && \
-		./$(BUILD_DIR)/tests/test_tcp_serializer && \
-		./$(BUILD_DIR)/tests/test_tcp_handler && \
-		./$(BUILD_DIR)/tests/test_tcp_server && \
-		./$(BUILD_DIR)/tests/test_integration
+	@./$(BUILD_DIR)/bin/test_config && \
+		./$(BUILD_DIR)/bin/test_logger && \
+		./$(BUILD_DIR)/bin/test_database && \
+		./$(BUILD_DIR)/bin/test_session_manager && \
+		./$(BUILD_DIR)/bin/test_udp_server && \
+		./$(BUILD_DIR)/bin/test_tcp_serializer && \
+		./$(BUILD_DIR)/bin/test_tcp_handler && \
+		./$(BUILD_DIR)/bin/test_tcp_server && \
+		./$(BUILD_DIR)/bin/test_integration
 
 # Очистить сборку
 clean:

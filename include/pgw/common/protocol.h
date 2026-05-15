@@ -2,6 +2,7 @@
 #define PGW_PROTOCOL_H
 
 #include <cstdint> // для uint_t
+#include <cstddef> // для size_t
 #include <vector>
 
 namespace pgw {

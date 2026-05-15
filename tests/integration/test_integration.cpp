@@ -1,6 +1,5 @@
 #include "Client.h"
 #include "Server.h"
-#include "ISessionManager.h"
 
 #include <gtest/gtest.h>
 
@@ -8,27 +7,32 @@
 #include <chrono>
 #include <fstream>
 #include <filesystem>
+#include <future>
 
 
 struct IntegrationTest : public testing::Test {
     // Набор путей к файлам
-    static constexpr const char* CLIENT_CONFIG_FILE {"configs/pgw_client.json"};
-    static constexpr const char* SERVER_CONFIG_FILE {"configs/pgw_server.json"};
+    static constexpr const char* CLIENT_CONFIG_FILE {"test_config_pgw_client.json"}; // или настоящий: "configs/pgw_client.json"
+    static constexpr const char* SERVER_CONFIG_FILE {"test_config_pgw_server.json"}; // или настоящий: "configs/pgw_server.json"
     static constexpr const char* CDR_FILE {"test_integration_cdr.log"};
+    // Программа не расчитана на то, что будет создаваться несколько логеров,
+    // поэтому объявим один и будем ловить ошибки повторной инициализации
     static constexpr const char* LOG_FILE {"test_integration.log"};
     static constexpr const char* DB_FILE {"test_integration.db"};
     // Набор тестовых констант
-    const pgw::types::imsi_t IMSI1 {"012340123401234"};
-    const pgw::types::imsi_t IMSI2 {"000000000000001"};
-    const pgw::types::imsi_t IMSI3 {"000000000000002"};
-    const pgw::types::imsi_t IMSI4 {"000000000000003"};
-    const pgw::types::imsi_t IMSI5 {"000000000000004"};
-    const pgw::types::imsi_t IMSI6 {"000000000000005"};
+    const pgw::types::imsi_t IMSI1 {"000000000000001"};
+    const pgw::types::imsi_t IMSI2 {"000000000000002"};
+    const pgw::types::imsi_t IMSI3 {"000000000000003"};
+    const pgw::types::imsi_t IMSI4 {"000000000000004"};
+    const pgw::types::imsi_t IMSI5 {"000000000000005"};
+    const pgw::types::imsi_t IMSI6 {"000000000000006"};
     const pgw::types::imsi_t IMSI_BLACKLISTED {"101010101010101"};
     const pgw::types::seconds_t SESSION_TIMEOUT_S {3}; // Создаем свой таймаут для сессии, чтобы долго не ждать
 
     // Метод, вызываемый перед всеми тестами
-    static void SetUpTestSuite(){}
+    static void SetUpTestSuite(){
+        createTestConfigs();
+    }
     // Метод, вызываемый после всех тестов
     static void TearDownTestSuite(){}
     // Метод, вызываемый в начале каждого теста
@@ -36,154 +40,108 @@ struct IntegrationTest : public testing::Test {
     // Метод, вызываемый в конце каждого теста
     void TearDown() override {
         // Удаляем тестовые файлы
+        std::filesystem::remove(CLIENT_CONFIG_FILE);
+        std::filesystem::remove(SERVER_CONFIG_FILE);
         std::filesystem::remove(CDR_FILE);
         std::filesystem::remove(LOG_FILE);
         std::filesystem::remove(DB_FILE);
     }
-};
 
+    // Создадим файлы тетсовых конфигов для проверки
+    static void createTestConfigs() {
+        std::ofstream serverConfig(SERVER_CONFIG_FILE);
+        if (!serverConfig) {
+            throw std::runtime_error("Cannot create server test config file");
+        }
+        serverConfig << R"({
+            "udp_ip": "127.0.0.1",
+            "udp_port": 9999,
+            "tcp_ip": "127.0.0.1",
+            "tcp_port": 9998,
+            "http_port": 9997,
+            "session_timeout_sec": 3,
+            "graceful_shutdown_rate": 100,
+            "cdr_file": ")" << CDR_FILE << R"(",
+            "log_file": ")" << LOG_FILE << R"(",
+            "log_level": "INFO",
+            "database_file": ")" << DB_FILE << R"(",
+            "blacklist": ["101010101010101"]
+        })";
+        serverConfig.close();
+
+        std::ofstream clientConfig(CLIENT_CONFIG_FILE);
+        if (!clientConfig) {
+            throw std::runtime_error("Cannot create client test config file");
+        }
+        clientConfig << R"({
+            "server_ip": "127.0.0.1",
+            "server_port": 9999,
+            "log_file": ")" << LOG_FILE << R"(",
+            "log_level": "INFO"
+        })";
+        clientConfig.close();
+    }
+};
 
 TEST_F(IntegrationTest, FullUdpWork) {
 
+    // Arrange
     pgw::server::Server server(SERVER_CONFIG_FILE);
-    server.run();
-
-    // Создание и запуск приложения
-    pgw::client::Client client(CLIENT_CONFIG_FILE,IMSI1);
-    client.run();
-
-    // TODO: сделать два потока и в них проводить манипуляции
-
-    EXPECT_TRUE(udpServer.isRunning());
-
-    EXPECT_TRUE(configClient.isValid());
-
-    EXPECT_NO_THROW({
-        clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
+    auto serverFuture = std::async(std::launch::async, [&server](){
+        // Act
+        return server.run();
     });
 
-    udpServer.handler();
+    // Даем время серверу на проснуться
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // Проверяем что сессия создана и она одна
-    EXPECT_TRUE(sessionManager.hasSession(imsi));
-    EXPECT_EQ(sessionManager.countActiveSession(), 1);
+    // Act 1
+    pgw::client::Client client1(CLIENT_CONFIG_FILE,IMSI1);
+    auto client1Result = client1.run();
 
+    //TODO: нужно исправить, что ответ не представлен в виде структуры,
+    // а просто магическая строка "created"
 
-    // Проверяем что запись в CDR произошла
-    // [ File версия ]
-    /*
-    std::ifstream cdrFile(CDR_FILE);
-    std::string cdrContent1((std::istreambuf_iterator<char>(cdrFile)),
-                           std::istreambuf_iterator<char>());
-    EXPECT_NE(cdrContent1.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent1.find(pgw::ICdrWriter::SESSION_CREATED), std::string::npos);
-    cdrFile.close();  // Закрываем файл для следующего чтения
-    */
-    // [ Database версия ]
+    // Assert 1
+    EXPECT_EQ(client1Result, 0);
+    EXPECT_EQ(client1.getResponse(), "created");
+
+    auto& serverSessionManager = server.getSessionManager();
+    EXPECT_TRUE(serverSessionManager.hasSession(IMSI1));
+    EXPECT_EQ(serverSessionManager.countActiveSession(), 1);
+
+    // Act 2
+    pgw::client::Client client2(CLIENT_CONFIG_FILE, IMSI_BLACKLISTED);
+    int client2Result = client2.run();
+
+    // Assert 1
+    EXPECT_EQ(client2Result, 0);
+    EXPECT_EQ(client2.getResponse(), "rejected");
+
+    EXPECT_FALSE(serverSessionManager.hasSession(IMSI_BLACKLISTED));
+    EXPECT_EQ(serverSessionManager.countActiveSession(), 1);
+
+    // Act 3
+    std::vector<pgw::types::imsi_t> imsis = {IMSI2, IMSI3, IMSI4};
+    for (const auto& imsi : imsis) {
+        pgw::client::Client client(CLIENT_CONFIG_FILE, imsi);
+        client.run();
+        EXPECT_TRUE(serverSessionManager.hasSession(imsi));
+    }
+
+    // Assert 3
+    EXPECT_EQ(serverSessionManager.countActiveSession(), 4);
+
+    // Act 4
+    server.stop();
+
+    // Дождемся полной остановки
+    EXPECT_EQ(serverFuture.get(), 0);
+
+    // Act 5
+    auto dbManager = server.getDatabaseManager();
     auto records = dbManager->getRecentCdr(10);
-    EXPECT_EQ(records.size(), 1);
-    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
-    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_CREATED);
 
-    // Проверяем, что сессии не будут удаляться до истечения таймаута
-    sessionManager.cleanTimeoutSessions();
-    EXPECT_EQ(sessionManager.countActiveSession(), 1);
-
-    LOG_INFO("Ожидаем таймаута сессии (~3c) и занесения записи в CDR");
-    // Делаем задержку на время жизни сессии
-    // PS: Для уменьшения задержки был введен свой параметр SESSION_TIMEOUT_S
-    // если нужен прамаетр m_sessionTimeoutSec из configs/pgw_server.json
-    // то используйте config.getSessionTimeout() и передавайте его в
-    // инициализатор sessionManager
-    std::this_thread::sleep_for(std::chrono::seconds(SESSION_TIMEOUT_S));
-
-    // Проверяем, что сессии удаляются после таймаута
-    sessionManager.cleanTimeoutSessions();
-    EXPECT_EQ(sessionManager.countActiveSession(), 0);
-
-    // Проверяем что запись в CDR произошла
-    // [ File версия ]
-    /*
-    cdrFile.open(CDR_FILE);  // Открываем файл заново
-    std::string cdrContent2((std::istreambuf_iterator<char>(cdrFile)),
-                            std::istreambuf_iterator<char>());
-    EXPECT_NE(cdrContent2.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent2.find(pgw::ICdrWriter::SESSION_DELETED), std::string::npos);
-    cdrFile.close();
-    */
-    // [ Database версия ]
-    records = dbManager->getRecentCdr(10);
-    EXPECT_EQ(records.size(), 2);
-    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
-    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_DELETED);
-
-    // Даем время на обработку
-    std::this_thread::sleep_for(std::chrono::seconds());
-
-    LOG_INFO("CLIENT =============");
-    // Добавим в черный список новый IMSI
-    imsi = IMSI_BLACKLISTED;
-    sessionManager.addToBlacklist(imsi);
-    LOG_INFO("Send blacklisted imsi: {}", imsi);
-    EXPECT_NO_THROW({
-        clientSocket->send(imsi, configClient.getServerIp(), configClient.getServerPort());
-    });
-
-    // Даем время на обработку
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    // Обрабатываем прием пакета на сервере
-    LOG_INFO("SERVER ============= ");
-    udpServer.handler();
-
-    // Проверяем что запись в CDR произошла
-    // [ File версия ]
-    /*
-    cdrFile.open(CDR_FILE);  // Открываем файл заново
-    std::string cdrContent3((std::istreambuf_iterator<char>(cdrFile)),
-                            std::istreambuf_iterator<char>());
-    EXPECT_NE(cdrContent3.find(imsi), std::string::npos);
-    EXPECT_NE(cdrContent3.find(pgw::ICdrWriter::SESSION_REJECTED), std::string::npos);
-    cdrFile.close();
-    */
-    // [ Database версия ]
-    records = dbManager->getRecentCdr(10);
-    EXPECT_EQ(records.size(), 3);
-    EXPECT_EQ(records[0].imsi, imsi);  // Последняя запись
-    EXPECT_EQ(records[0].action, pgw::ICdrWriter::SESSION_REJECTED);
-
-    LOG_INFO("CLIENT =============");
-    EXPECT_NO_THROW({
-        LOG_INFO("Send imsi: {}", IMSI2);
-        clientSocket->send(IMSI2, configClient.getServerIp(), configClient.getServerPort());
-        LOG_INFO("Sendend imsi: {}", IMSI3);
-        clientSocket->send(IMSI3, configClient.getServerIp(), configClient.getServerPort());
-        LOG_INFO("Send imsi: {}", IMSI4);
-        clientSocket->send(IMSI4, configClient.getServerIp(), configClient.getServerPort());
-        LOG_INFO("Send imsi: {}", IMSI5);
-        clientSocket->send(IMSI5, configClient.getServerIp(), configClient.getServerPort());
-    });
-
-    // Даем время на обработку
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    LOG_INFO("SERVER ============= ");
-    udpServer.handler();
-
-    EXPECT_EQ(sessionManager.countActiveSession(), 4);
-    records = dbManager->getRecentCdr(7);
-    EXPECT_EQ(records.size(), 7);
-
-    LOG_INFO("SHUTDOWN ========== ");
-    // Запускаем очищение сессий
-    sessionManager.gracefulShutdown();
-
-    EXPECT_EQ(sessionManager.countActiveSession(), 0);
-    records = dbManager->getRecentCdr(11);
-    EXPECT_EQ(records.size(), 11);
-
-    LOG_INFO("TEST DONE ========= ");
-    // Останавливаем сервер
-    udpServer.stop();
-    EXPECT_FALSE(udpServer.isRunning());
+    // Assert 5
+    EXPECT_GE(records.size(), 5);  // created для IMSI1 + IMSI2,3,4 + rejected для blacklisted
 }

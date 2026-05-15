@@ -74,12 +74,21 @@ target_sources(
 target_sources(
     test_integration PRIVATE
     ${CMAKE_SOURCE_DIR}/src/pgw/client/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/client/Client.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/FileCdrWriter.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/CdrWriterFactory.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/HttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
+
 )
 
 # Подключаем заголовочные файлы

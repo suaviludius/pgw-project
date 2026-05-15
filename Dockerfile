@@ -2,7 +2,6 @@
 FROM ubuntu:22.04 AS builder
 
 # Аргументы для прередачи в CMake
-ARG BUILD_TESTS=ON
 ARG BUILD_TYPE=Release
 
 # Устанавливаем необходимые пакеты
@@ -13,89 +12,146 @@ RUN apt-get update && apt-get install -y \
     cmake \
     git \
     libsqlite3-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем рабочую директорию
-WORKDIR /build
+# Устанавливаем рабочую директорию для файлов проекта
+WORKDIR /project
 
 # Копируем ТОЛЬКО файлы сборки (для кэширования)
 COPY CMakeLists.txt ./
 COPY Makefile ./
-# Копируем исходный код (при изменении кода кэш сбросится после этого шага)
-COPY include/ include/
-COPY src/ src/
-COPY pgw_client/ pgw_client/
-COPY pgw_server/ pgw_server/
-COPY tests/ tests/
-COPY configs/ configs/
+# Копируем исходный код (разделяем для еще лучшего кеширования)
+COPY include/ ./include/
+COPY src/ ./src/
+COPY app/ ./app/
+COPY tests/ ./tests/
+COPY configs/ ./configs/
+
+# В эту папку cmake будет собирать
+WORKDIR /project/build
 
 # Конфигурируем и собираем
 # Не использую make команды, чтобы иметь лучший контроль
-# -S - source dirrectory ( . - текущая)
-# -B - build dirrectory ( . - текущая)
-# Такой подход будет собирать в билде и исходники и билд от cmake
-RUN cmake -S . -B . \
+RUN cmake .. \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DBUILD_TESTS=${BUILD_TESTS} \
+    -DBUILD_TESTS=ON \
     -DBUILD_SERVER=ON \
     -DBUILD_CLIENT=ON
 
-# Концовочка дает распараллелить загрузку
+# Собираем только нужные цели
 RUN cmake --build . --config ${BUILD_TYPE} -j$(nproc)
 
-# ------ Этап 2: Финальный образ для запуска ------
-FROM ubuntu:22.04 AS runtime
+# ------ Этап 2: Образ для сервера ------
+FROM ubuntu:22.04 AS server
 
 # Устанавливаем минимальные зависимости для запуска (не компиляции)
 # libstdc++6 - стандартная библиотека C++
 # libgcc-s1  - GCC
 # curl       - http
-# libsqlite3-0 - SQLite runtime
+# ca-certificates - если работаешь с защищенными соединениями (БД, HTTPS ...)
+# libsqlite3-0  - SQLite runtime
+# tzdata        - правильное отображение веремени
 RUN apt-get update && apt-get install -y \
     libstdc++6 \
     libgcc-s1 \
     curl \
+    ca-certificates \
     libsqlite3-0 \
+    libssl3 \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем пользователя для запуска приложения
-# -m        - cоздать домашнюю директорию для пользователя
-# (в ней будут временные файлы)
-# -u 1000   - задать конкретный UID (User ID) = 1000
-# (это ID домашнего пользвателя, что позволит не использовать
-# sudo для чтения/изменения файлов в системе)
-# pgwuser   - назвались груздем
-RUN useradd -m -u 1000 pgwuser
+# 1) Создаем крутого пользователя
+# -m        - cоздать /home директорию для пользователя (в ней будут временные файлы)
+# -u 1000   - задать конкретный UID (User ID) = 1000 (этот ID позволит не использовать sudo для файлов в системе)
+# pgwuser   - назвались
+# 2) Создаем директории для временных файлов pgwuser
+# 3) Даем доступ pgwuser к директории /app
+RUN useradd -m -u 1000 -s /bin/bash pgwuser && \
+    mkdir -p /app/configs /app/logs /app/cdr && \
+    chown -R pgwuser:pgwuser /app
 
 # Устанавливаем рабочую директорию
-# Дальше команды выполняются в ней
 WORKDIR /app
 
-# Копируем скомпилированные бинарники из builder
-# Поэтому рантайм и будет легче, у него ТОЛЬКО бинарники
-COPY --from=builder /build/bin/pgw_server /app/
-COPY --from=builder /build/bin/pgw_client /app/
+# Копируем только бинарники из builder (поэтому образ рантайма будет лечгче)
+COPY --from=builder /project/build/bin/pgw_server /app/pgw_server
 
-# Копируем конфигурационные файлы
+# Копируем конфетки
 COPY configs/ /app/configs/
 
-# Создаем директории для логов и CDR с правильными правами
-RUN mkdir -p /app/logs /app/cdr && \
-    chown pgwuser:pgwuser /app/logs /app/cdr
+# Исправляем права
+RUN chmod +x /app/pgw_server && \
+    chown -R pgwuser:pgwuser /app
 
-# Создаем директорию для временных файлов pgwuser
-RUN mkdir -p /home/pgwuser && \
-    chown pgwuser:pgwuser /home/pgwuser
-
-# Переключаемся на не-root пользователя
-# Команды будут выполняются от имени pgwuser
-# Это обезопасит процесс внутри контейнера
+# Переключаемся на нашего пользователя pgwuser.
+# Выполнение команд не от root обесопасит работу в контейнере!
 USER pgwuser
 
 # Заметка для IMAGES (при навелении мышки будет отображать)
 # 9000 - UDP порт для сессий
-# 8080 - HTTP порт для API
-EXPOSE 9000/udp 8080/tcp
+# 9090 - TCP порт для HMI
+# 8080 - TCP порт для HTTP API
+EXPOSE 9000/udp 9090/tcp 8080/tcp
 
-# Команда по умолчанию - запуск сервера
-CMD ["./pgw_server", "configs/pgw_server.docker.json"]
+# Точка входа
+ENTRYPOINT ["./pgw_server"]
+CMD ["configs/pgw_server.docker.json"]
+
+
+# ------ Этап 3: Образ для клиента ------
+FROM ubuntu:22.04 AS client
+
+RUN apt-get update && apt-get install -y \
+    libstdc++6 \
+    libgcc-s1 \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 -s /bin/bash pgwuser && \
+    mkdir -p /app/configs /app/logs && \
+    chown -R pgwuser:pgwuser /app
+
+WORKDIR /app
+
+COPY --from=builder /project/build/bin/pgw_client /app/pgw_client
+COPY configs/ /app/configs/
+
+RUN chmod +x /app/pgw_client && \
+    chown -R pgwuser:pgwuser /app
+
+USER pgwuser
+
+ENTRYPOINT ["./pgw_client"]
+CMD ["configs/pgw_client.docker.json", "001010123456789"]
+
+
+# ------ Этап 4: Образ для тестирования ------
+FROM ubuntu:22.04 AS testing
+
+RUN apt-get update && apt-get install -y \
+    libstdc++6 \
+    libgcc-s1 \
+    ca-certificates \
+    libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tests
+
+COPY --from=builder /project/build/bin/ /tests/
+COPY configs/ /tests/configs/
+
+RUN chmod +x /tests/test_* && \
+    mkdir -p /tests/logs
+
+# Команда по умолчанию - запуск всех тестов
+CMD ["sh", "-c", \
+     "./test_config && \
+      ./test_logger && \
+      ./test_database && \
+      ./test_udp_server && \
+      ./test_tcp_serializer && \
+      ./test_tcp_handler && \
+      ./test_tcp_server && \
+      ./test_integration"]
