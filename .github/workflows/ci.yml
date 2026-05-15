@@ -9,12 +9,13 @@ on:
     branches: [main, develop]
     paths-ignore:
       - '**.md'
+      - '.kanbn/**'
 
 jobs:
   # Сборка и тесты
   build-and-test:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -40,8 +41,11 @@ jobs:
         run: |
           ./build/tests/test_config && \
           ./build/tests/test_logger && \
-          ./build/tests/test_session_manager && \
+          ./build/tests/test_database && \
           ./build/tests/test_udp_server && \
+          ./build/tests/test_tcp_serializer && \
+          ./build/tests/test_tcp_handler && \
+          ./build/tests/test_tcp_server && \
           ./build/tests/test_integration
 
   # Docker сборка
