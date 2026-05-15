@@ -15,15 +15,15 @@ namespace client {
 // Миллисекундный таймаут для poll()
 constexpr int POLL_TIMEOUT_MS {500};
 
-Client::Client(const pgw::types::filePath_t& configPath, const pgw::types::imsi_t& imsi)
-    : m_config{std::make_unique<Config>(configPath)}, m_imsi{imsi}, m_socket{pgw::SocketFactory::createUdp()} {
+Client::Client(const pgw::types::filePath_t& configPath,
+               const pgw::types::imsi_t& imsi)
+               : m_config{std::make_unique<Config>(configPath)},
+                 m_imsi{imsi},
+                 m_socket{pgw::SocketFactory::createUdp()} {
 }
 
 
 Client::~Client() {
-    if (pgw::logger::isInit()) {
-        pgw::logger::shutdown();
-    }
 }
 
 
@@ -94,7 +94,8 @@ void Client::runEventLoop(){
     if (ready > 0 && (udpFd.revents & POLLIN)) {
         // Обрабатываем пакет
         auto packet = m_socket->receive();
-        LOG_INFO("Server response: {}", packet.data);
+        m_response = packet.data;
+        LOG_INFO("Server response: {}", m_response);
     }
 
     m_socket->close();
