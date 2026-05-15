@@ -39,14 +39,14 @@ jobs:
 
       - name: Run tests
         run: |
-          ./build/tests/test_config && \
-          ./build/tests/test_logger && \
-          ./build/tests/test_database && \
-          ./build/tests/test_udp_server && \
-          ./build/tests/test_tcp_serializer && \
-          ./build/tests/test_tcp_handler && \
-          ./build/tests/test_tcp_server && \
-          ./build/tests/test_integration
+          ./build/bin/test_config && \
+          ./build/bin/test_logger && \
+          ./build/bin/test_database && \
+          ./build/bin/test_udp_server && \
+          ./build/bin/test_tcp_serializer && \
+          ./build/bin/test_tcp_handler && \
+          ./build/bin/test_tcp_server && \
+          ./build/bin/test_integration
 
   # Docker сборка
   docker-build:
