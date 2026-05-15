@@ -25,6 +25,3 @@ logs/
 # Dependencies (downloaded by CMake)
 _deps/
 external/
-
-# tests
-test_config.json
