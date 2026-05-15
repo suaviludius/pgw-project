@@ -1,7 +1,10 @@
 {
   "udp_ip": "0.0.0.0",
   "udp_port": 9000,
+  "tcp_ip": "0.0.0.0",
+  "tcp_port": 9090,
   "session_timeout_sec": 30,
+  "database_file": "/app/cdr/pgw.db",
   "cdr_file": "/app/cdr/cdr.log",
   "http_port": 8080,
   "graceful_shutdown_rate": 10,
