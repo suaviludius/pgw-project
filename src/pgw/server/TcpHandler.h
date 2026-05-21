@@ -19,15 +19,15 @@ private:
     // Ссылка на менеджер сессий (ассоциация)
     ISessionManager& m_sessionManager;
 
-    // Указатель на раздельное владение базой данный (создается извне)
-    std::shared_ptr<IDatabaseManager> m_dbManager;
+    // Указатель на раздельное владение
+    std::shared_ptr<ICdrWriter> m_cdrWriter;
 
     // Ссылка на атомик завершения сессии
     std::atomic<bool>& m_shutdownRequest;
 
 public:
     TcpHandler(ISessionManager& sessionManager,
-               std::shared_ptr<IDatabaseManager> dbManager,
+               std::shared_ptr<ICdrWriter> m_cdrWriter,
                std::atomic<bool>& shutdownRequest);
     ~TcpHandler() = default;
 
