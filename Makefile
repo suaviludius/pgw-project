@@ -48,6 +48,7 @@ test:
 	@./$(BUILD_DIR)/bin/test_config && \
 		./$(BUILD_DIR)/bin/test_logger && \
 		./$(BUILD_DIR)/bin/test_database && \
+		./$(BUILD_DIR)/bin/test_database_cdr_writer && \
 		./$(BUILD_DIR)/bin/test_session_manager && \
 		./$(BUILD_DIR)/bin/test_udp_server && \
 		./$(BUILD_DIR)/bin/test_tcp_serializer && \
@@ -69,13 +70,6 @@ rebuild: clean all
 
 DOCKER_IMAGE := pgw-project
 DOCKER_TAG := latest
-
-# Собрать Docker образ
-docker-build:
-	@docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
-
-docker-build-t:
-	@docker build --build-arg BUILD_TESTS=ON -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 # Запустить через docker-compose (сервер + клиент)
 # (если не было билда, то сам соберет)
@@ -104,14 +98,6 @@ docker-clean:
 	@docker compose rm -f
 	@docker volume prune -f
 
-# Логирование docker-compose
-docker-logs:
-	@docker compose logs -f pgw_server
-
-# Подключиться к контейнеру (shell)
-docker-shell:
-	@docker exec -it pgw_server /bin/bash
-
 # =============================
 # Справка
 # =============================
@@ -123,17 +109,13 @@ help:
 	@echo "  make server    - Запустить сервер"
 	@echo "  make client    - Запустить клиент"
 	@echo "  make test      - Запустить тесты"
-	@echo "  make clean     - Удалить build директорию"
+	@echo "  make clean     - Очистить сборку"
 	@echo "  make rebuild   - Полная пересборка"
 	@echo ""
 	@echo "	 Docker команды:"
-	@echo "  make docker-build     	- Собрать Docker образ без тестов"
-	@echo "  make docker-build-t   	- Собрать Docker образ c тестами"
 	@echo "  make docker-start   	- Собрать и запустить все сервисы (лучший вариант)"
 	@echo "  make docker-server   	- Запустить только сервер"
 	@echo "  make docker-client   	- Запустить только клиента"
 	@echo "  make docker-test     	- Запустить тесты"
 	@echo "  make docker-stop     	- Остановить все сервисы"
 	@echo "  make docker-clean    	- Очистить ресурсы"
-	@echo "  make docker-logs     	- Показать логи сервера"
-	@echo "  make docker-shell    	- Подключиться к контейнеру"
