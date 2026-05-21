@@ -11,6 +11,9 @@ add_executable(
     test_database
     unit/test_database.cpp
 )
+add_executable(test_database_cdr_writer
+    unit/test_database_cdr_writer.cpp
+)
 add_executable(
     test_session_manager
     unit/test_session_manager.cpp
@@ -48,6 +51,11 @@ target_sources(
 target_sources(
     test_database PRIVATE
     ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+)
+target_sources(
+    test_database_cdr_writer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+     ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
 )
 target_sources(
     test_session_manager PRIVATE
@@ -104,6 +112,14 @@ target_include_directories(
 )
 target_include_directories(
     test_database PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_database_cdr_writer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
     ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
@@ -177,6 +193,12 @@ target_link_libraries(
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
 )
 target_link_libraries(
+    test_database_cdr_writer PRIVATE
+    pgw_common
+    GTest::gtest_main
+    GTest::gtest_main
+)
+target_link_libraries(
     test_session_manager PRIVATE
     pgw_common
     GTest::gtest
@@ -242,6 +264,7 @@ enable_testing()
 add_test(NAME test_config COMMAND test_config)
 add_test(NAME test_logger COMMAND test_logger)
 add_test(NAME test_database COMMAND test_database)
+add_test(NAME test_database_cdr_writer COMMAND test_database_cdr_writer)
 add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
 add_test(NAME test_tcp_serializer COMMAND test_tcp_serializer)

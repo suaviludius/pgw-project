@@ -36,7 +36,7 @@ private:
 
     // Компоненты приложения
     std::shared_ptr<DatabaseManager> m_dbManager;
-    std::unique_ptr<ICdrWriter> m_cdrWriter;
+    std::shared_ptr<ICdrWriter> m_cdrWriter;
     std::unique_ptr<SessionManager> m_sessionManager;
     std::unique_ptr<TcpHandler> m_tcpHandler;
     std::unique_ptr<TcpServer> m_tcpServer;
@@ -75,8 +75,8 @@ public:
     // Получение менеджера сессий (для тестов)
     ISessionManager& getSessionManager() { return *m_sessionManager; }
 
-    // Получение менеджера БД (для тестов)
-    std::shared_ptr<IDatabaseManager> getDatabaseManager() { return m_dbManager; }
+    // Получение CDR писателя (для тестов)
+    std::shared_ptr<ICdrWriter> getCdrWriter() { return m_cdrWriter; }
 };
 
 } // namespace server

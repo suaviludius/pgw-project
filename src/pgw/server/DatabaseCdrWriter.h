@@ -2,8 +2,8 @@
 #define PGW_DATABASE_CDR_WRITER_H
 
 #include "ICdrWriter.h"
-#include "types.h"
 #include "DatabaseManager.h"
+#include "types.h"
 
 #include <memory>
 
@@ -15,13 +15,19 @@ namespace pgw {
 class DatabaseCdrWriter : public ICdrWriter {
     // Менеджер базы данных (ссылка, владение вне этого класса)
     std::shared_ptr<pgw::DatabaseManager> m_db;
+
 public:
     explicit DatabaseCdrWriter(std::shared_ptr<pgw::DatabaseManager> db);
     ~DatabaseCdrWriter();
 
-    // Записывает действие в CDR базу данных
-    // Формат записи: IMSI, ACTION, sTIMESTAMP
     void writeAction(pgw::types::constImsi_t imsi, std::string_view action) override;
+
+    std::vector<CdrRecord> getRecentRecords(size_t limit) override;
+
+    std::optional<int> getRecordCount() override;
+
+    // Создаёт таблицу CDR (вызывается при инициализации)
+    bool createTable();
 };
 
 } // namespace pgw

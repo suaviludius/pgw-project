@@ -139,8 +139,7 @@ TEST_F(IntegrationTest, FullUdpWork) {
     EXPECT_EQ(serverFuture.get(), 0);
 
     // Act 5
-    auto dbManager = server.getDatabaseManager();
-    auto records = dbManager->getRecentCdr(10);
+    auto records = server.getCdrWriter()->getRecentRecords(10);
 
     // Assert 5
     EXPECT_GE(records.size(), 5);  // created для IMSI1 + IMSI2,3,4 + rejected для blacklisted

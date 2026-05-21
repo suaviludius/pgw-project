@@ -1,7 +1,7 @@
 #include "TcpHandler.h"
 #include "TcpSerializer.h"
 #include "MockSessionManager.h"
-#include "MockDatabaseManager.h"
+#include "MockCdrWriter.h"
 
 #include <gtest/gtest.h>
 
@@ -10,7 +10,7 @@ struct TcpHandlerTest : public testing::Test {
 
     // Набор заглушек
     std::unique_ptr<MockSessionManager> mockSessionManager;
-    std::shared_ptr<MockDatabaseManager> mockDatabaseManager;
+    std::shared_ptr<MockCdrWriter> mockCdrWriter;
     // Набор тестовых констант
     const pgw::types::imsi_t IMSI1 {"123456789012345"};
     const pgw::types::imsi_t IMSI2 {"123456789012346"};
@@ -28,9 +28,9 @@ struct TcpHandlerTest : public testing::Test {
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {
         mockSessionManager = std::make_unique<MockSessionManager>();
-        mockDatabaseManager = std::make_shared<MockDatabaseManager>();
+        mockCdrWriter = std::make_shared<MockCdrWriter>();
         shutdownRequest = false;
-        tcpHandler = std::make_unique<pgw::TcpHandler>(*mockSessionManager,mockDatabaseManager,shutdownRequest);
+        tcpHandler = std::make_unique<pgw::TcpHandler>(*mockSessionManager,mockCdrWriter,shutdownRequest);
 
         msg.header.version = pgw::protocol::PROTOCOL_VERSION;
         msg.header.command = pgw::protocol::Command::TEST;
@@ -114,11 +114,7 @@ TEST_F(TcpHandlerTest, GetCdr_Sucsess){
         {IMSI1, "stop", "2024-01-01 10:05:00"}
     };
 
-    EXPECT_CALL(*mockDatabaseManager, isConnected())
-        .Times(1)
-        .WillOnce(testing::Return(true));
-
-    EXPECT_CALL(*mockDatabaseManager, getRecentCdr(limit))
+    EXPECT_CALL(*mockCdrWriter, getRecentRecords(limit))
         .Times(1)
         .WillOnce(testing::Return(records));
 

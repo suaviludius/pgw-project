@@ -8,9 +8,8 @@
 class MockDatabaseManager : public pgw::IDatabaseManager {
 public:
     MOCK_METHOD(bool, isConnected, (), (const,override));
-    MOCK_METHOD(bool, writeCdr, (std::string_view imsi, std::string_view action), (override));
-    MOCK_METHOD(std::vector<pgw::CdrRecord>, getRecentCdr, (size_t limit), (override));
-    MOCK_METHOD( std::optional<int>, count, (const std::string& table), (override));
+    MOCK_METHOD(bool, initialize, (), (override));
+    MOCK_METHOD(bool, execute, (const std::string& sql), (override));
 };
 
 #endif // MOCK_DATABASE_MANAGER_H

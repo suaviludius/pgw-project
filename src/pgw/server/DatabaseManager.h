@@ -4,6 +4,8 @@
 #include "IDatabaseManager.h"
 
 #include <sqlite3.h>
+#include <optional>
+#include <string>
 
 
 // Менеджер базы данных SQLite
@@ -18,12 +20,6 @@ private:
     // Путь к файлу с БД
     std::string m_dbPath;
 
-    // Prepared statements для быстрой вставки
-    sqlite3_stmt* m_stmtWriteCdr = nullptr;
-
-    // Подготовка statement для запроса
-    sqlite3_stmt* prepareStatement(const std::string& sql);
-
     // Очистка ресурсов
     void cleanup();
 
@@ -37,21 +33,15 @@ public:
 
     bool isConnected() const override { return m_db != nullptr; }
 
-    bool writeCdr(std::string_view imsi, std::string_view action) override;
+    bool initialize() override;
 
-    std::vector<CdrRecord> getRecentCdr(size_t limit = READ_CDR_LIMIT) override;
+    bool execute(const std::string& sql) override;
 
-    std::optional<int> count(const std::string& table) override;
-
-    // Инициализация БД (создание таблиц)
-    bool initialize();
-
-    // Выполнение SQL без возврата результата
-    bool execute(const std::string& sql);
+    // Подготовка statement для запроса
+    sqlite3_stmt* prepareStatement(const std::string& sql);
 
     //Выполнение SQL с возвратом одного значения
     std::optional<std::string> queryValue(const std::string& sql);
-
 };
 
 } // namespace pgw

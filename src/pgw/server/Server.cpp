@@ -49,8 +49,7 @@ int Server::run() {
         }
 
         if (!initializeDatabase()) {
-            LOG_ERROR("Failed to initialize database");
-            return 1;
+            LOG_WARN("Failed to initialize database");
         }
 
         if (!initializeCdrWriter()) {
@@ -97,12 +96,14 @@ bool Server::initializeLogger() {
 }
 
 bool Server::initializeDatabase() {
-    m_dbManager = std::make_shared<DatabaseManager>(std::string(m_config->getDatabaseFile()));
+    std::string dbPath(m_config->getDatabaseFile());
+    if (dbPath.empty()) return false;
+
+    m_dbManager = std::make_shared<DatabaseManager>(dbPath);
 
     if (!m_dbManager->initialize()) {
-        LOG_ERROR("Failed to initialize database, continuing with limited functionality");
         m_dbManager.reset();
-        return true; // Продолжаем работу без БД
+        return false; // Продолжаем работу без БД
     }
 
     LOG_INFO("Database initialized successfully");
@@ -114,11 +115,12 @@ bool Server::initializeCdrWriter() {
         // Используем базу данных для CDR
         m_cdrWriter = CdrWriterFactory::createDatabase(m_dbManager);
         LOG_INFO("CDR writer initialized with database backend");
-    } else {
-        // Используем файл для CDR (fallback)
-        m_cdrWriter = CdrWriterFactory::createFile(m_config->getCdrFile());
-        LOG_INFO("CDR writer initialized with file backend");
+        return true;
     }
+
+    // Используем файл для CDR (fallback)
+    m_cdrWriter = CdrWriterFactory::createFile(m_config->getCdrFile());
+    LOG_INFO("CDR writer initialized with file backend");
 
     return true;
 }
@@ -164,7 +166,7 @@ bool Server::initializeServers() {
     // Инициализация обработчика TCP команд
     m_tcpHandler = std::make_unique<TcpHandler>(
         *m_sessionManager,
-        m_dbManager,
+        m_cdrWriter,
         m_shutdownRequest
     );
 

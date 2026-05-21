@@ -5,10 +5,10 @@
 namespace pgw {
 
 TcpHandler::TcpHandler(ISessionManager& sessionManager,
-               std::shared_ptr<IDatabaseManager> dbManager,
+               std::shared_ptr<ICdrWriter> cdrWriter,
                std::atomic<bool>& shutdownRequest)
             :  m_sessionManager{sessionManager},
-               m_dbManager{std::move(dbManager)},
+               m_cdrWriter{std::move(cdrWriter)},
                m_shutdownRequest{shutdownRequest}{
     LOG_INFO("TCP command handler initit");
 }
@@ -94,17 +94,17 @@ protocol::Message TcpHandler::handleGetSessions() {
 
 
 protocol::Message TcpHandler::handleGetCdr(const nlohmann::json& params) {
-    if (!m_dbManager || !m_dbManager->isConnected()) {
+    if (!m_cdrWriter) {
         return TcpSerializer::createJsonMsg(protocol::Command::GET_CDR,protocol::Status::ERROR);
     }
 
-    size_t limit = pgw::IDatabaseManager::READ_CDR_LIMIT;
+    size_t limit = ICdrWriter::READ_CDR_LIMIT;
     if (params.contains("limit") && params["limit"].is_number()) {
         limit = params["limit"].get<size_t>();
     }
 
     // Получаем CDR записи из БД
-    auto records = m_dbManager->getRecentCdr(limit);
+    auto records = m_cdrWriter->getRecentRecords(limit);
 
     nlohmann::json response;
     nlohmann::json recordsArray = nlohmann::json::array();
