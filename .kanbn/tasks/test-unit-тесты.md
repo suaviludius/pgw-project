@@ -1,8 +1,8 @@
 ---
 created: 2026-03-23T14:45:00.127Z
-updated: 2026-04-21T19:23:54.832Z
+updated: 2026-05-20T18:45:12.512Z
 assigned: ""
-progress: 0.1
+progress: 0.65
 tags: []
 started: 2026-04-21T00:00:00.000Z
 ---
@@ -14,8 +14,8 @@ started: 2026-04-21T00:00:00.000Z
 ## Sub-tasks
 
 - [x] Тесты для DatabaseManager
-- [ ] Тесты для TcpServer и CommandHandler
-- [ ] Тесты для Statistics
+- [x] Тесты для TcpServer и CommandHandler
+- [x] Тесты для Statistics
 - [ ] Тесты для ConnectionManager
 - [ ] Тесты для ViewModel
-- [ ] Настроить CI запуск тестов
+- [x] Настроить CI запуск тестов
