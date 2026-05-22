@@ -1,7 +1,7 @@
 #ifndef PGW_SOCKET_UTILS_H
 #define PGW_SOCKET_UTILS_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <netinet/in.h>  // sockaddr_in, htons, inet_pton
 #include <string>
