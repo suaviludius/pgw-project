@@ -2,7 +2,7 @@
 #define PGW_FILE_CDR_WRITER_H
 
 #include "ICdrWriter.h"
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <fstream>
 

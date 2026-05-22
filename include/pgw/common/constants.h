@@ -1,7 +1,7 @@
 #ifndef PGW_CONSTANTS_H
 #define PGW_CONSTANTS_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <string_view>
 

@@ -1,7 +1,7 @@
 #ifndef I_UDP_SOCKET_H
 #define I_UDP_SOCKET_H
 
-#include "ISocket.h"
+#include "pgw/common/interfaces/ISocket.h"
 
 namespace pgw {
 

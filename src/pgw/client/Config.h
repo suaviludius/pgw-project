@@ -2,7 +2,7 @@
 #ifndef PGW_CLIENT_CONFIG_H
 #define PGW_CLIENT_CONFIG_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 namespace pgw {
 namespace client {

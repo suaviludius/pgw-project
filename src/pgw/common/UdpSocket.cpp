@@ -1,6 +1,6 @@
-#include "UdpSocket.h"
+#include "pgw/common/UdpSocket.h"
 
-#include "logger.h"
+#include "pgw/common/logger.h"
 
 #include <arpa/inet.h>
 #include <unistd.h>

@@ -1,6 +1,5 @@
-#include "logger.h"
+#include "pgw/common/TcpSerializer.h"
 #include "TcpServer.h"
-#include "TcpSerializer.h"
 #include "MockTcpHandler.h"
 #include "MockTcpSocket.h"
 

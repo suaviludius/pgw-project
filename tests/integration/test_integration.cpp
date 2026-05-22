@@ -54,17 +54,16 @@ struct IntegrationTest : public testing::Test {
             throw std::runtime_error("Cannot create server test config file");
         }
         serverConfig << R"({
-            "udp_ip": "127.0.0.1",
-            "udp_port": 9999,
-            "tcp_ip": "127.0.0.1",
-            "tcp_port": 9998,
-            "http_port": 9997,
-            "session_timeout_sec": 3,
-            "graceful_shutdown_rate": 100,
+            "udp_port": 9000,
+            "tcp_ip": "0.0.0.0",
+            "tcp_port": 9090,
+            "session_timeout_sec": 30,
+            "database_file": ")" << DB_FILE << R"(",
             "cdr_file": ")" << CDR_FILE << R"(",
+            "http_port": 8080,
+            "graceful_shutdown_rate": 10,
             "log_file": ")" << LOG_FILE << R"(",
             "log_level": "INFO",
-            "database_file": ")" << DB_FILE << R"(",
             "blacklist": ["101010101010101"]
         })";
         serverConfig.close();
@@ -75,7 +74,7 @@ struct IntegrationTest : public testing::Test {
         }
         clientConfig << R"({
             "server_ip": "127.0.0.1",
-            "server_port": 9999,
+            "server_port": 9000,
             "log_file": ")" << LOG_FILE << R"(",
             "log_level": "INFO"
         })";

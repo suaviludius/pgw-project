@@ -1,5 +1,5 @@
+#include "pgw/common/TcpSerializer.h"
 #include "TcpHandler.h"
-#include "TcpSerializer.h"
 #include "MockSessionManager.h"
 #include "MockCdrWriter.h"
 

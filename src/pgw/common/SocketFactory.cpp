@@ -1,7 +1,8 @@
-#include "SocketFactory.h"
-#include "UdpSocket.h"
-#include "TcpSocket.h"
-#include "logger.h"
+#include "pgw/common/logger.h"
+
+#include "pgw/common/SocketFactory.h"
+#include "pgw/common/UdpSocket.h"
+#include "pgw/common/TcpSocket.h"
 
 #include <stdexcept>
 

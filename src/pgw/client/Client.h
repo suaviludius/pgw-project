@@ -1,8 +1,9 @@
 #ifndef PGW_CLIENT_H
 #define PGW_CLIENT_H
 
+#include "pgw/common/interfaces/IUdpSocket.h"
+
 #include "Config.h"
-#include "IUdpSocket.h"
 
 #include <memory>
 

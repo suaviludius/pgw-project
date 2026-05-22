@@ -1,6 +1,6 @@
 #include "HttpServer.h"
 
-#include "logger.h"
+#include "pgw/common/logger.h"
 
 namespace pgw {
 

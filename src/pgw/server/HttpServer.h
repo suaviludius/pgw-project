@@ -4,7 +4,7 @@
 // 1. Заголовочный файл модуля
 // 2. Собственные заголовки проекта
 #include "ISessionManager.h"
-#include "types.h"
+#include "pgw/common/types.h"
 // 3. Внешние библиотеки
 #include <httplib.h>
 // 4. Системные С-заголовки

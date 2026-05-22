@@ -1,7 +1,7 @@
 #ifndef I_TCP_SOCKET_H
 #define I_TCP_SOCKET_H
 
-#include "ISocket.h"
+#include "pgw/common/interfaces/ISocket.h"
 
 #include <optional>
 #include <memory>

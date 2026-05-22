@@ -1,7 +1,15 @@
 #include "Server.h"
-#include "logger.h"
+
+#include "pgw/common/logger.h"
+#include "pgw/common/SocketFactory.h"
+#include "Config.h"
+#include "DatabaseManager.h"
 #include "CdrWriterFactory.h"
-#include "SocketFactory.h"
+#include "SessionManager.h"
+#include "TcpHandler.h"
+#include "TcpServer.h"
+#include "UdpServer.h"
+#include "HttpServer.h"
 
 #include <poll.h>
 #include <chrono>
@@ -18,51 +26,81 @@ constexpr int SESSION_CLEANUP_INTERVAL_S {10};
 namespace pgw {
 namespace server {
 
+// Определение структуры Impl – все поля и приватные методы класса
+struct Server::Impl {
+    // Конфигурация приложения (создается один раз в конструкторе)
+    std::unique_ptr<Config> m_config;
+
+    // Флаг завершения работы
+    std::atomic<bool> m_shutdownRequest{false};
+
+    // Компоненты приложения
+    std::shared_ptr<DatabaseManager> m_dbManager;
+    std::shared_ptr<ICdrWriter> m_cdrWriter;
+    std::unique_ptr<SessionManager> m_sessionManager;
+    std::unique_ptr<TcpHandler> m_tcpHandler;
+    std::unique_ptr<TcpServer> m_tcpServer;
+    std::unique_ptr<UdpServer> m_udpServer;
+    std::unique_ptr<HttpServer> m_httpServer;
+
+    // Инициализация компонентов
+    bool initializeLogger();
+    bool initializeDatabase();
+    bool initializeCdrWriter();
+    bool initializeSessionManager();
+    bool initializeServers();
+
+    // Основной цикл обработки событий
+    void runEventLoop();
+
+    // Graceful shutdown
+    void shutdown();
+
+    // Конструктор принимает configPath
+    explicit Impl(const std::string& configPath)
+        : m_config(std::make_unique<Config>(configPath)) {}
+};
+
 Server::Server(const std::string& configPath)
-    : m_config{std::make_unique<Config>(configPath)} {
+    : pImpl{std::make_unique<Impl>(configPath)} {
 }
 
-Server::~Server() {
-    if (m_tcpServer && m_tcpServer->isRunning()) {
-        m_tcpServer->stop();
-    }
-    if (m_udpServer && m_udpServer->isRunning()) {
-        m_udpServer->stop();
-    }
-    if (m_httpServer && m_httpServer->isRunning()) {
-        m_httpServer->stop();
-    }
+// Все серверы сами остановятся
+Server::~Server() = default;
+
+void Server::stop(){
+    pImpl->m_shutdownRequest.store(true);
 }
 
 int Server::run() {
     try {
         // Проверка валидности конфигурации
-        if (!m_config->isValid()) {
-            std::cerr << "Config error: " << m_config->getError() << '\n';
+        if (!pImpl->m_config->isValid()) {
+            std::cerr << "Config error: " <<  pImpl->m_config->getError() << '\n';
             return 1;
         }
 
         // Последовательная инициализация компонентов
-        if (!initializeLogger()) {
+        if (!pImpl->initializeLogger()) {
             std::cerr << "Failed to initialize logger\n";
             return 1;
         }
 
-        if (!initializeDatabase()) {
+        if (!pImpl->initializeDatabase()) {
             LOG_WARN("Failed to initialize database");
         }
 
-        if (!initializeCdrWriter()) {
+        if (!pImpl->initializeCdrWriter()) {
             LOG_ERROR("Failed to initialize CDR writer");
             return 1;
         }
 
-        if (!initializeSessionManager()) {
+        if (!pImpl->initializeSessionManager()) {
             LOG_ERROR("Failed to initialize session manager");
             return 1;
         }
 
-        if (!initializeServers()) {
+        if (!pImpl->initializeServers()) {
             LOG_ERROR("Failed to initialize servers");
             return 1;
         }
@@ -70,10 +108,10 @@ int Server::run() {
         LOG_INFO("Server started successfully");
 
         // Запуск основного цикла обработки событий
-        runEventLoop();
+        pImpl->runEventLoop();
 
         // Graceful shutdown
-        shutdown();
+        pImpl->shutdown();
 
         LOG_INFO("Server stopped gracefully");
         return 0;
@@ -89,13 +127,13 @@ int Server::run() {
     }
 }
 
-bool Server::initializeLogger() {
+bool Server::Impl::initializeLogger() {
     pgw::logger::init(m_config->getLogLevel());
     pgw::logger::addFileSink(std::string(m_config->getLogFile()));
     return pgw::logger::isInit();
 }
 
-bool Server::initializeDatabase() {
+bool Server::Impl::initializeDatabase() {
     std::string dbPath(m_config->getDatabaseFile());
     if (dbPath.empty()) return false;
 
@@ -110,7 +148,7 @@ bool Server::initializeDatabase() {
     return true;
 }
 
-bool Server::initializeCdrWriter() {
+bool Server::Impl::initializeCdrWriter() {
     if (m_dbManager) {
         // Используем базу данных для CDR
         m_cdrWriter = CdrWriterFactory::createDatabase(m_dbManager);
@@ -125,7 +163,7 @@ bool Server::initializeCdrWriter() {
     return true;
 }
 
-bool Server::initializeSessionManager() {
+bool Server::Impl::initializeSessionManager() {
     if (!m_cdrWriter) {
         LOG_ERROR("CDR writer not initialized");
         return false;
@@ -142,7 +180,7 @@ bool Server::initializeSessionManager() {
     return true;
 }
 
-bool Server::initializeServers() {
+bool Server::Impl::initializeServers() {
     if (!m_sessionManager) {
         LOG_ERROR("Session manager not initialized");
         return false;
@@ -188,7 +226,7 @@ bool Server::initializeServers() {
     return true;
 }
 
-void Server::runEventLoop() {
+void Server::Impl::runEventLoop() {
     // Настройка poll для отслеживания TCP и UDP сокетов
     constexpr int MAX_FDS = 3;
     pollfd fds[MAX_FDS];
@@ -245,7 +283,7 @@ void Server::runEventLoop() {
     }
 }
 
-void Server::shutdown() {
+void Server::Impl::shutdown() {
     LOG_INFO("Starting graceful shutdown...");
 
     // Завершение всех сессий с контролируемой скоростью
@@ -265,6 +303,14 @@ void Server::shutdown() {
     }
 
     LOG_INFO("Graceful shutdown completed");
+}
+
+ISessionManager& Server::getSessionManager() {
+    return *pImpl->m_sessionManager;
+}
+
+std::shared_ptr<ICdrWriter> Server::getCdrWriter() {
+    return pImpl->m_cdrWriter;
 }
 
 } // namespace server

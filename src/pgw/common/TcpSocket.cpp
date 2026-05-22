@@ -1,6 +1,6 @@
-#include "TcpSocket.h"
+#include "pgw/common/TcpSocket.h"
 
-#include "logger.h"
+#include "pgw/common/logger.h"
 
 #include <arpa/inet.h>
 #include <unistd.h>

@@ -12,8 +12,8 @@ option(BUILD_CLIENT "Build client" ON)
 option(BUILD_SERVER "Build server" ON)
 option(BUILD_TESTS "Build tests" ON)
 
-# Кэширование зависимостей для ускорения
-set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/build/_deps CACHE PATH "Download directory for FetchContent")
+# Кэширование зависимостей не в build (чтобы при пересборке не скачивать заново)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.cache/_deps CACHE PATH "Download directory for FetchContent")
 
 include(FetchContent)
 
@@ -58,16 +58,16 @@ target_sources(
     src/pgw/common/logger.cpp
     src/pgw/common/UdpSocket.cpp
     src/pgw/common/TcpSocket.cpp
+    src/pgw/common/TcpSerializer.cpp
     src/pgw/common/SocketUtils.cpp
     src/pgw/common/SocketFactory.cpp
 )
 
 target_include_directories(pgw_common
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/pgw/common/interfaces # ... и то что будет видно другим
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/pgw/common # Интерфейсы ...
+        ${CMAKE_CURRENT_SOURCE_DIR}/include # Интерфейсы и то что будет видно другим
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pgw/common  # Для приватных заголовков (за что стыдно, то не видно)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src  # Для приватных заголовков (за что стыдно, то не видно)
 )
 
 # Линкуем зависимости

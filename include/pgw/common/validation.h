@@ -1,8 +1,8 @@
 #ifndef PGW_VALIDATION
 #define PGW_VALIDATION
 
-#include "constants.h"
-#include "types.h"
+#include "pgw/common/constants.h"
+#include "pgw/common/types.h"
 
 #include <algorithm> // all_of()
 

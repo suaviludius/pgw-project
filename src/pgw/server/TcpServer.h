@@ -1,7 +1,7 @@
 #ifndef PGW_TCP_SERVER_H
 #define PGW_TCP_SERVER_H
 
-#include "ITcpSocket.h"
+#include "pgw/common/interfaces/ITcpSocket.h"
 #include "ITcpHandler.h"
 
 #include <memory> // unique_ptr

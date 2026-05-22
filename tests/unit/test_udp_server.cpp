@@ -1,4 +1,3 @@
-#include "logger.h"
 #include "MockUdpSocket.h"
 #include "MockSessionManager.h"
 

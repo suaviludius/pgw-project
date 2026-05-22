@@ -1,7 +1,7 @@
 #ifndef PGW_SESSION_H
 #define PGW_SESSION_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 // Класс, представляющий сессию абонента
 // Хранит идентификатор абонента (IMSI) и время создания сессии

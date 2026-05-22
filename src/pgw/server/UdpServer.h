@@ -3,7 +3,7 @@
 
 #include "ISessionManager.h"
 #include "ICdrWriter.h"
-#include "IUdpSocket.h"
+#include "pgw/common/interfaces/IUdpSocket.h"
 
 #include <memory> // unique_ptr
 
