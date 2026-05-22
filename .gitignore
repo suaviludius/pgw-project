@@ -23,5 +23,6 @@ logs/
 *.db
 
 # Dependencies (downloaded by CMake)
+.cache/
 _deps/
 external/
