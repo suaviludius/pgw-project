@@ -1,7 +1,7 @@
 #ifndef I_TCP_HANDLER_H
 #define I_TCP_HANDLER_H
 
-#include "protocol.h"
+#include "pgw/common/protocol.h"
 
 namespace pgw {
 

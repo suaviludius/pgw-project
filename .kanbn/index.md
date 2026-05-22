@@ -13,7 +13,6 @@ completedColumns:
 - [refactor-Провести-изменения-в-соответсвии-с-принципами-dry](tasks/refactor-Провести-изменения-в-соответсвии-с-принципами-dry.md)
 - [feat-hmi-приложение-qt-qml](tasks/feat-hmi-приложение-qt-qml.md)
 - [refactor-Изменения-по-принципами-хорошего-тона](tasks/refactor-Изменения-по-принципами-хорошего-тона.md)
-- [refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include](tasks/refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include.md)
 
 ## Todo
 
@@ -21,9 +20,10 @@ completedColumns:
 
 ## In Progress
 
-- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
 - [test-unit-тесты](tasks/test-unit-тесты.md)
 - [test-integration-тесты](tasks/test-integration-тесты.md)
+- [refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include](tasks/refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include.md)
+- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
 
 ## Done
 

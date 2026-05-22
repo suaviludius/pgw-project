@@ -1,9 +1,10 @@
 #ifndef PGW_TCP_SOCKET_H
 #define PGW_TCP_SOCKET_H
 
-#include "ITcpSocket.h"
+#include "pgw/common/interfaces/ITcpSocket.h"
+#include "pgw/common/types.h"
+
 #include "SocketUtils.h"
-#include "types.h"
 
 #include <optional>
 

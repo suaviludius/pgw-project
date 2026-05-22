@@ -1,10 +1,10 @@
 #ifndef PGW_SOCKET_FACTORY_H
 #define PGW_SOCKET_FACTORY_H
 
-#include "ISocket.h"
-#include "IUdpSocket.h"
-#include "ITcpSocket.h"
-#include "types.h"
+#include "pgw/common/interfaces/ISocket.h"
+#include "pgw/common/interfaces/IUdpSocket.h"
+#include "pgw/common/interfaces/ITcpSocket.h"
+#include "pgw/common/types.h"
 
 #include <memory>
 #include <string_view>

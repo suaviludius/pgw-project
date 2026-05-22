@@ -1,7 +1,7 @@
 #ifndef I_SOCKET_H
 #define I_SOCKET_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <netinet/in.h> // Структуры сокетов для Unix систем
 

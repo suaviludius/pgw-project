@@ -1,7 +1,8 @@
+#include "pgw/common/logger.h"
+#include "pgw/common/SocketFactory.h"
+
 #include "Client.h"
 #include "Config.h"
-#include "SocketFactory.h"
-#include "logger.h"
 
 #include <poll.h>
 #include <atomic>
@@ -10,6 +11,7 @@
 
 
 namespace pgw {
+
 namespace client {
 
 // Миллисекундный таймаут для poll()

@@ -1,7 +1,8 @@
 #include "TcpServer.h"
-#include "TcpSerializer.h"
-#include "SocketFactory.h"
-#include "logger.h"
+
+#include "pgw/common/logger.h"
+#include "pgw/common/TcpSerializer.h"
+#include "pgw/common/SocketFactory.h"
 
 #include <cstring>
 #include <unistd.h> // close()

@@ -3,7 +3,7 @@
 
 #include "ISessionManager.h"
 #include "ICdrWriter.h"
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <memory> // Для unique_ptr
 #include <unordered_map>

@@ -1,7 +1,7 @@
 #ifndef I_CDR_WRITER
 #define I_CDR_WRITER
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <optional>
 #include <vector>

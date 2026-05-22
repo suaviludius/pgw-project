@@ -1,7 +1,7 @@
 #ifndef I_SESSION_MANAGER_H
 #define I_SESSION_MANAGER_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <unordered_map>
 

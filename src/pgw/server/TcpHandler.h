@@ -1,10 +1,11 @@
 #ifndef PGW_TCP_HANDLER_H
 #define PGW_TCP_HANDLER_H
 
-#include "ITcpHandler.h"
-#include "ISessionManager.h"
-#include "IDatabaseManager.h"
-#include "TcpSerializer.h"
+#include "pgw/server/interfaces/ITcpHandler.h"
+#include "pgw/server/interfaces/ISessionManager.h"
+#include "pgw/server/interfaces/IDatabaseManager.h"
+
+#include <nlohmann/json.hpp>
 
 #include <atomic>
 

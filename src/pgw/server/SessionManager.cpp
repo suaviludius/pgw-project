@@ -1,7 +1,7 @@
 #include "SessionManager.h"
 
-#include "logger.h"
-#include "validation.h"
+#include "pgw/common/logger.h"
+#include "pgw/common/validation.h"
 
 #include <algorithm>
 #include <thread>

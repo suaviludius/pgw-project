@@ -1,6 +1,8 @@
 #include "TcpHandler.h"
-#include "logger.h"
-#include "validation.h"
+
+#include "pgw/common/logger.h"
+#include "pgw/common/validation.h"
+#include "pgw/common/TcpSerializer.h"
 
 namespace pgw {
 

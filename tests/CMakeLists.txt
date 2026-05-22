@@ -102,7 +102,7 @@ target_sources(
 # Подключаем заголовочные файлы
 target_include_directories(
     test_config PRIVATE
-    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
@@ -112,7 +112,7 @@ target_include_directories(
 )
 target_include_directories(
     test_database PRIVATE
-    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/server
@@ -120,7 +120,7 @@ target_include_directories(
 target_include_directories(
     test_database_cdr_writer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/server
@@ -142,13 +142,13 @@ target_include_directories(
 )
 target_include_directories(
     test_tcp_serializer PRIVATE
-    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/pgw/common
 )
 target_include_directories(
     test_tcp_handler PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/src/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/server
@@ -259,6 +259,15 @@ configure_file(
     COPYONLY
 )
 
+target_compile_definitions(test_config PRIVATE LOG_OFF)
+target_compile_definitions(test_database PRIVATE LOG_OFF)
+target_compile_definitions(test_database_cdr_writer PRIVATE LOG_OFF)
+target_compile_definitions(test_session_manager PRIVATE LOG_OFF)
+target_compile_definitions(test_udp_server PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_serializer PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_handler PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_server PRIVATE LOG_OFF)
+
 # Регистрация тестов в CTest
 enable_testing()
 add_test(NAME test_config COMMAND test_config)
@@ -269,4 +278,5 @@ add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
 add_test(NAME test_tcp_serializer COMMAND test_tcp_serializer)
 add_test(NAME test_tcp_handler COMMAND test_tcp_handler)
+add_test(NAME test_tcp_server COMMAND test_tcp_server)
 add_test(NAME test_integration COMMAND test_integration WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

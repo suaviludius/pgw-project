@@ -9,7 +9,7 @@
 
 //  ATTENTION
 //  В случае замены типа std::string на иной, необходимо также изменить
-//  тип в файле constants.h на соответсвтующий.
+//  тип в файле pgw/common/constants.h на соответсвтующий.
 
 namespace pgw {
 namespace types {

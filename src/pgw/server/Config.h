@@ -2,7 +2,7 @@
 #ifndef PGW_SERVER_CONFIG_H
 #define PGW_SERVER_CONFIG_H
 
-#include "types.h"
+#include "pgw/common/types.h"
 
 namespace pgw {
 namespace server {

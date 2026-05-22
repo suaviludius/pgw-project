@@ -150,6 +150,7 @@ CMD ["sh", "-c", \
      "./test_config && \
       ./test_logger && \
       ./test_database && \
+      ./test_database_cdr_writer && \
       ./test_udp_server && \
       ./test_tcp_serializer && \
       ./test_tcp_handler && \

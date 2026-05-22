@@ -1,7 +1,7 @@
 #ifndef TCP_SERIALIZER_H
 #define TCP_SERIALIZER_H
 
-#include "protocol.h"
+#include "pgw/common/protocol.h"
 
 #include <nlohmann/json.hpp>
 

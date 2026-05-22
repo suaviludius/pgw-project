@@ -1,7 +1,7 @@
 #ifndef MOCK_TCP_SOCKET_H
 #define MOCK_TCP_SOCKET_H
 
-#include "ITcpSocket.h"
+#include "pgw/common/interfaces/ITcpSocket.h"
 
 #include <gmock/gmock.h>
 

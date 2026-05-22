@@ -1,6 +1,6 @@
 #include "DatabaseCdrWriter.h"
 #include "DatabaseManager.h"
-#include "types.h"
+#include "pgw/common/types.h"
 
 #include <gtest/gtest.h>
 #include <filesystem>

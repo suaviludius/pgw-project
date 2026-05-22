@@ -1,5 +1,3 @@
-// Файлы mock директории
-#include "logger.h"  // Логгер заглушка
 #include "MockCdrWriter.h"
 
 #include "SessionManager.h"
