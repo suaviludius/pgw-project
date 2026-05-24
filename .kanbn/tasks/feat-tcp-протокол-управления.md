@@ -1,10 +1,11 @@
 ---
 created: 2026-03-23T13:06:34.404Z
-updated: 2026-05-22T14:25:38.466Z
+updated: 2026-05-24T17:46:45.781Z
 assigned: ""
-progress: 0.8
+progress: 1
 tags: []
 started: 2026-04-26T00:00:00.000Z
+completed: 2026-05-24T00:00:00.000Z
 ---
 
 # [FEAT] TCP протокол управления
@@ -18,4 +19,4 @@ started: 2026-04-26T00:00:00.000Z
 - [x] Определить коды ответов
 - [x] Реализовать TcpServer
 - [x] Реализовать CommandHandler
-- [ ] Написать integration-тесты для TCP протокола
+- [x] Написать integration-тесты для TCP протокола
