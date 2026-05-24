@@ -2,11 +2,7 @@
 #define PGW_CDR_WRITER_FACTORY_H
 
 #include "ICdrWriter.h"
-<<<<<<< HEAD:src/pgw/server/CdrWriterFactory.h
 #include "pgw/common/types.h"
-=======
-#include "types.h"
->>>>>>> main:pgw_server/CdrWriterFactory.h
 
 #include <memory>
 #include <string_view>

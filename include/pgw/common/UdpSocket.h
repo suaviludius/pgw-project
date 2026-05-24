@@ -1,15 +1,9 @@
 #ifndef PGW_UDP_SOCKET_H
 #define PGW_UDP_SOCKET_H
 
-<<<<<<<< HEAD:include/pgw/common/UdpSocket.h
 #include "pgw/common/interfaces/IUdpSocket.h"
 #include "pgw/common/SocketUtils.h"
 #include "pgw/common/types.h"
-========
-#include "IUdpSocket.h"
-#include "SocketUtils.h"
-#include "types.h"
->>>>>>>> main:include/UdpSocket.h
 
 namespace pgw {
 
