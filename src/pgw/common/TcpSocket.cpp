@@ -23,19 +23,19 @@ TcpSocket::TcpSocket(bool isListening)
     if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
         ::close(m_fd);
         throw std::runtime_error("TCP Socket creation failed (reuse): " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     int flags = fcntl(m_fd, F_GETFL, 0);
     if(flags < 0){
         ::close(m_fd);
         throw std::runtime_error("TCP Socket creation failed (get flags): " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
     if(fcntl(m_fd, F_SETFL, flags | O_NONBLOCK) < 0){
         ::close(m_fd);
         throw std::runtime_error("TCP Socket creation failed (non-blocking): " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     LOG_DEBUG("TCP Socket initialized (listening={})", m_isListening);
@@ -58,7 +58,7 @@ void TcpSocket::bind(pgw::types::constIp_t ip, pgw::types::port_t port){
 
     if (::bind(m_fd, reinterpret_cast<sockaddr*>(&m_addr), sizeof(m_addr)) == -1) {
         throw std::runtime_error("TCP Socket bind failed: " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     if (m_isListening) {
@@ -95,12 +95,12 @@ std::optional<std::unique_ptr<ITcpSocket>> TcpSocket::accept(){
     if(flags < 0){
         ::close(clientFd);
         throw std::runtime_error("TCP accept socket failed (get flags): " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
     if(fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) < 0){
         ::close(clientFd);
         throw std::runtime_error("TCP accept socket failed (non-blocking): " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     auto clientSocket = std::make_unique<TcpSocket>(false);
@@ -124,7 +124,7 @@ void TcpSocket::connect(pgw::types::constIp_t ip, pgw::types::port_t port){
             return;
         }
         throw std::runtime_error("TCP Socket connect failed: " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     LOG_INFO("TCP Socket connected to {}", SocketUtils::addrToString(addr));
@@ -146,7 +146,7 @@ TcpSocket::Packet TcpSocket::receive(){
             return Packet{"", addr};
         }
         throw std::runtime_error("TCP Socket receive failed: " +
-                                 std::string(strerror(errno)));
+                                std::string(strerror(errno)));
     }
 
     if (bytesReceived == 0) {
