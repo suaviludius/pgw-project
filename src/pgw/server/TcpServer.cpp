@@ -102,7 +102,6 @@ void TcpServer::stop(){
     }
 }
 
-// Метод раcсчитан на использование с менеджером poll, epoll, select
 void TcpServer::processEvent(){
     if(!m_running) {
         LOG_INFO("TCP server not running");
@@ -110,23 +109,11 @@ void TcpServer::processEvent(){
     }
 
     try{
-        // В случае, если на дискрипторе серверного сокета
-        // произошло какое-то событие, и poll() нас привел в эту функцию,
-        // значит произошло одно из двух:
-
-        // 1. Пришел запрос на новые подключения.
+        // 1. Пришел запрос на новые подключения
         acceptNewClient();
 
-        // 2. Пришли данные от подключенных клиентов и их надо обработать.
-        // Так как мы работаем с сокетом и не хотим его блокировать при работе
-        // с данными, мы просто делаем снимок актуальных изменщиков на момент вызова processEvent().
-        // Так мы обезопасим себя от итераций по изменяемому контейнеру
-        std::vector<int> clientsFd;
-        for(const auto& [fd, client] : m_clients){
-            clientsFd.push_back(fd);
-        }
-
-        for(auto fd : clientsFd){
+        // 2. Пришли данные от подключенных клиентов и их надо обработать
+        for(const auto& [fd, _ ] : m_clients){
             handleClientData(fd);
         }
     }
@@ -169,6 +156,10 @@ void TcpServer::acceptNewClient(){
 
 
 void TcpServer::handleClientData(int clientFd){
+    // Нет такого дискриптора
+    if (m_clients.find(clientFd) == m_clients.end()) return;
+
+    // Сокета уже закрылся
     auto& client = m_clients[clientFd];
     if (!client.socket) return;
 
@@ -233,6 +224,15 @@ void TcpServer::removeClient(int clientFd){
         m_clients.erase(it);
         LOG_DEBUG("TCP client removed, fd: {}", clientFd);
     }
+}
+
+std::vector<int> TcpServer::getClientsFds() const {
+    std::vector<int> clientFds;
+    clientFds.reserve(m_clients.size());
+    for (const auto& [fd, client] : m_clients) {
+        clientFds.push_back(fd);
+    }
+    return clientFds;
 }
 
 } // namespace pgw

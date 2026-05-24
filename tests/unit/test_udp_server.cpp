@@ -99,7 +99,7 @@ TEST_F(UdpServerTest, RunWithValidImsi){
     pgw::UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
     // Act
     server.start();
-    server.handler();
+    server.processEvent();
     // Assert
     EXPECT_TRUE(server.isRunning());
 }
@@ -126,7 +126,7 @@ TEST_F(UdpServerTest, RunWithInvalidImsi) {
     pgw::UdpServer server(*mockSessionManager,IP,PORT, std::move(mockSocket));
     // Act
     server.start();
-    server.handler();
+    server.processEvent();
     // Assert
     EXPECT_TRUE(server.isRunning());
 }
@@ -154,7 +154,7 @@ TEST_F(UdpServerTest, RunWithBlacklistedImsi) {
     pgw::UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
     // Act
     server.start();
-    server.handler();
+    server.processEvent();
     // Assert
     EXPECT_TRUE(server.isRunning());
 }
@@ -184,7 +184,7 @@ TEST_F(UdpServerTest, RunWithAlreadyExistedImsi) {
     pgw::UdpServer server(*mockSessionManager, IP,PORT, std::move(mockSocket));
     // Act
     server.start();
-    server.handler();
+    server.processEvent();
     // Assert
     EXPECT_TRUE(server.isRunning());
 }
@@ -208,7 +208,7 @@ TEST_F(UdpServerTest, RunWithSessionCreationError) {
     pgw::UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
     // Act
     server.start();
-    server.handler();
+    server.processEvent();
     // Assert
     EXPECT_TRUE(server.isRunning());
 }
@@ -226,7 +226,7 @@ TEST_F(UdpServerTest, RunWithoutThrows) {
     // Act
     server.start();
     // Assert
-    EXPECT_NO_THROW(server.handler()); // Не должно падать при исключении
+    EXPECT_NO_THROW(server.processEvent()); // Не должно падать при исключении
 }
 
 TEST_F(UdpServerTest, HandlerBeforeStart) {
@@ -235,5 +235,5 @@ TEST_F(UdpServerTest, HandlerBeforeStart) {
 
     pgw::UdpServer server(*mockSessionManager, IP, PORT, std::move(mockSocket));
 
-    EXPECT_NO_THROW(server.handler()); // Должен дать лог-варнинг и выйти
+    EXPECT_NO_THROW(server.processEvent()); // Должен дать лог-варнинг и выйти
 }

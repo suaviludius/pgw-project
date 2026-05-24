@@ -1,6 +1,6 @@
 ---
 created: 2026-03-23T14:45:00.127Z
-updated: 2026-05-20T18:45:12.512Z
+updated: 2026-05-24T17:47:35.984Z
 assigned: ""
 progress: 0.65
 tags: []
@@ -18,4 +18,4 @@ started: 2026-04-21T00:00:00.000Z
 - [x] Тесты для Statistics
 - [ ] Тесты для ConnectionManager
 - [ ] Тесты для ViewModel
-- [x] Настроить CI запуск тестов
+- [ ] Настроить CI запуск тестов

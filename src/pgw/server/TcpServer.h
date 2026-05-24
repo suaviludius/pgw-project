@@ -15,10 +15,10 @@ namespace pgw {
 
 class TcpServer{
 private:
-    // Максимальный размер клиентского буффера для чтения (значение наугад)
+    // Максимальный размер клиентского буффера для чтения
     static constexpr uint32_t CLIENT_READ_BUFFER_SIZE = 1500;
 
-    // Максимальный размер клиентского буффера для записи (значение наугад)
+    // Максимальный размер клиентского буффера для записи
     static constexpr uint32_t CLIENT_WRITE_BUFFER_SIZE = 1500;
 
     // Обработчик команд (создается извне)
@@ -68,29 +68,27 @@ public:
     // Останавливает UDP сервер
     void stop();
 
-    // Обработчик событий на серверном сокете.
-    // Если данный метод был вызван, значит произошло одно из двух:
-    // 1) серверному сокету пришел запрос на установление новой связи с клиентом
-    // 2) уже существующий клиент хочет передать данные серверу
-    // В общем выполняются два метода acceptNewClient() и handleClientData(fd). Один из них трушный.
-    // TODO: Заменить в Udp Server handler() на такое же название: processEvent()
+    // Выполняет два метода: acceptNewClient() и handleClientData(fd)
     void processEvent();
 
-    // Проверяет, запущен ли сервер
-    bool isRunning() const {return m_running;}
-
-    // Возвращает файловый дескриптор сокета для использования с poll/epoll
-    int getFd() const {return m_socket->getFd();}
-
-    size_t getClientsCount() { return m_clients.size();}
-
-private:
     // Подключение новых клиентов
     void acceptNewClient();
 
     // Обработка данных клиента
     void handleClientData(int fd);
 
+    // Проверяет, запущен ли сервер
+    bool isRunning() const {return m_running;}
+
+    // Возвращает файловый дескриптор сокета сервера для использования с poll/epoll
+    int getFd() const {return m_socket->getFd();}
+
+    // Возвращает файловые дескрипторы сокетов клиентов для использования с poll/epoll
+    std::vector<int> getClientsFds() const;
+
+    size_t getClientsCount() { return m_clients.size();}
+
+private:
     // Удаление клиента
     void removeClient(int fd);
 };

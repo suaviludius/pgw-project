@@ -35,8 +35,12 @@ add_executable(
     unit/test_tcp_server.cpp
 )
 add_executable(
-    test_integration
-    integration/test_integration.cpp
+    test_integration_udp
+    integration/test_integration_udp.cpp
+)
+add_executable(
+    test_integration_tcp
+    integration/test_integration_tcp.cpp
 )
 
 # Добавляем файлы, которые будем тестировать
@@ -80,7 +84,7 @@ target_sources(
     ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
 )
 target_sources(
-    test_integration PRIVATE
+    test_integration_udp PRIVATE
     ${CMAKE_SOURCE_DIR}/src/pgw/client/Config.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/client/Client.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
@@ -96,7 +100,22 @@ target_sources(
     ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
-
+)
+target_sources(
+    test_integration_tcp PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/CdrWriterFactory.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/HttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
 )
 
 # Подключаем заголовочные файлы
@@ -162,7 +181,7 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
-    test_integration PRIVATE
+    test_integration_udp PRIVATE
     ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
@@ -170,6 +189,14 @@ target_include_directories(
     ${CMAKE_SOURCE_DIR}/src/pgw/common
     ${CMAKE_SOURCE_DIR}/src/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/client
+)
+target_include_directories(
+    test_integration_tcp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 
 # Зависимости загруженны в главном CMakeList
@@ -242,7 +269,17 @@ target_link_libraries(
     SQLite::SQLite3
 )
 target_link_libraries(
-    test_integration PRIVATE
+    test_integration_udp PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    httplib::httplib
+)
+target_link_libraries(
+    test_integration_tcp PRIVATE
     pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
@@ -279,4 +316,5 @@ add_test(NAME test_udp_server COMMAND test_udp_server)
 add_test(NAME test_tcp_serializer COMMAND test_tcp_serializer)
 add_test(NAME test_tcp_handler COMMAND test_tcp_handler)
 add_test(NAME test_tcp_server COMMAND test_tcp_server)
-add_test(NAME test_integration COMMAND test_integration WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(NAME test_integration_udp COMMAND test_integration_udp WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(NAME test_integration_tcp COMMAND test_integration_tcp WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

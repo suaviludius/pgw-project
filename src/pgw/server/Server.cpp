@@ -228,57 +228,89 @@ bool Server::Impl::initializeServers() {
 
 void Server::Impl::runEventLoop() {
     // Настройка poll для отслеживания TCP и UDP сокетов
-    constexpr int MAX_FDS = 3;
-    pollfd fds[MAX_FDS];
-    int nfds = 0;
-
-    // UDP сокет
-    if (m_udpServer && m_udpServer->isRunning()){
-        fds[nfds].fd = m_udpServer->getFd();
-        fds[nfds].events = POLLIN;
-        nfds++;
-    }
-
-    // TCP сокет
-    if (m_tcpServer && m_tcpServer->isRunning()) {
-        fds[nfds].fd = m_tcpServer->getFd();
-        fds[nfds].events = POLLIN;
-        nfds++; // инкрементируем, чтобы использовать как общее число дискрипторов
-    }
+    constexpr int MAX_FDS = 10;
+    std::vector<struct pollfd> fds;
 
     // Таймер для периодической очистки просроченных сессий
     auto lastCleanup = std::chrono::steady_clock::now();
 
     // Основной цикл обработки событий
     while (!m_shutdownRequest.load(std::memory_order_acquire)) {
+
+        // Индексы для фиксации позиций серверов
+        int udpIdx = -1;
+        int tcpIdx = -1;
+
+        // UDP сокет
+        if (m_udpServer && m_udpServer->isRunning()){
+            fds.push_back({
+                .fd = m_udpServer->getFd(),
+                .events = POLLIN,
+                .revents = 0
+            });
+            udpIdx = fds.size() - 1;
+        }
+
+        // TCP сокет
+        if (m_tcpServer && m_tcpServer->isRunning()) {
+            fds.push_back({
+                .fd = m_tcpServer->getFd(),
+                .events = POLLIN,
+                .revents = 0
+            });
+            tcpIdx = fds.size() - 1;
+        }
+
+        // Добавляем клиентские сокеты динамически
+        auto clientsFds = m_tcpServer->getClientsFds();
+        for (int clientFd : clientsFds) {
+            fds.push_back({
+                .fd = clientFd,
+                .events = POLLIN,
+                .revents = 0
+            });
+        }
+
         // Ожидание событий на всех сокетах с таймаутом
-        int ready = poll(fds, nfds, POLL_TIMEOUT_MS);
+        int ready = poll(fds.data(), fds.size(), POLL_TIMEOUT_MS);
 
         if (ready == -1) {
-            if (errno == EINTR) {
-                continue;  // Прервано сигналом, продолжаем
-            }
+            if (errno == EINTR) continue; // Прервано сигналом, продолжаем
             LOG_ERROR("Poll error: {}", strerror(errno));
             break;
         }
 
         // Обработка UDP пакетов, если есть данные
-        if (ready > 0 && (fds[0].revents & POLLIN)) {
-            m_udpServer->handler();
+        if (udpIdx != -1 && (fds[udpIdx].revents & POLLIN)) {
+            m_udpServer->processEvent();
         }
 
-        // Обработка TCP команд
-        if (ready > 0 && nfds > 1 && (fds[1].revents & POLLIN)) {
-            m_tcpServer->processEvent();
+        // Обработка подключений TCP сервера
+        if (tcpIdx != -1 && (fds[tcpIdx].revents & POLLIN)) {
+            // Новый клиент пытается подключиться
+            m_tcpServer->acceptNewClient();
         }
 
-        // Периодические задачи
-        auto now = std::chrono::steady_clock::now();
+        // Так мы узнаем индекс первого клиента
+        size_t firstClientIdx = (udpIdx != -1 ? 1 : 0) + (tcpIdx != -1 ? 1 : 0);
 
-        // Очистка просроченных сессий
-        if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S)) {
-            m_sessionManager->cleanTimeoutSessions();
-            lastCleanup = now;
+        // Обработка команд TCP сервера
+        for (size_t i = firstClientIdx; i < fds.size(); ++i) {
+            if (fds[i].revents & (POLLIN | POLLHUP | POLLERR)) {
+                // Передаем конкретный fd клиента, в котором произошло событие.
+                m_tcpServer->handleClientData(fds[i].fd);
+            }
+        }
+
+         if (ready == 0) {
+            // Таймаут, переходим к периодическим задачам
+            auto now = std::chrono::steady_clock::now();
+
+            // Очистка просроченных сессий
+            if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S)) {
+                m_sessionManager->cleanTimeoutSessions();
+                lastCleanup = now;
+            }
         }
     }
 }

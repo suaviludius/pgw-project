@@ -155,4 +155,5 @@ CMD ["sh", "-c", \
       ./test_tcp_serializer && \
       ./test_tcp_handler && \
       ./test_tcp_server && \
-      ./test_integration"]
+      ./test_integration_udp && \
+      ./test_integration_tcp"]

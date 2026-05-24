@@ -73,6 +73,42 @@ TEST_F(TcpServerTest, AcceptNewClient_Success) {
     EXPECT_CALL(*rawServerSocket, bind(IP, PORT))
         .Times(1);
 
+    // acceptNewClient
+    EXPECT_CALL(*rawServerSocket, accept())
+        .Times(1)
+        .WillOnce(testing::Return(std::optional(std::move(mockClientSocket))));
+
+    EXPECT_CALL(*rawClientSocket, getFd())
+        .Times(1)
+        .WillRepeatedly(testing::Return(CLIENT_FD));
+
+    // stop
+    EXPECT_CALL(*rawServerSocket, close())
+        .Times(1);
+    EXPECT_CALL(*rawClientSocket, close())
+        .Times(1);
+
+    // Act
+    tcpServer->start();
+    tcpServer->acceptNewClient();
+
+    // Assert
+    EXPECT_EQ(tcpServer->getClientsCount(), 1);
+
+    // Act
+    tcpServer->stop();
+}
+
+
+TEST_F(TcpServerTest, ProcessEvent_Success) {
+    // Arrange
+    auto mockClientSocket = std::make_unique<MockTcpSocket>();
+    auto rawClientSocket = mockClientSocket.get();
+
+    // start
+    EXPECT_CALL(*rawServerSocket, bind(IP, PORT))
+        .Times(1);
+
     // processEvent
     // 1 - acceptNewClient
     EXPECT_CALL(*rawServerSocket, accept())
@@ -210,12 +246,6 @@ TEST_F(TcpServerTest, ManyClientsHandle_Succsess) {
 
 
     // server
-
-    // Когда все клиенты будут добавлены, то на processEvent
-    // будет снова выполняться acceptNewClient, но возвращать nullopt,
-    // так как новых клиентов не будет, а будут просто приходить данные
-    // от уже созданных клиентов
-
     // Вот эта шляпа была вынужденной мерой, потому что цикл с использованием std::move()
     // поверх EXEPT_CALL совершал насилие над моими нервными клетками
     int nextClientIndex = 0;
@@ -229,24 +259,17 @@ TEST_F(TcpServerTest, ManyClientsHandle_Succsess) {
 
     // client
     for (size_t i = 0; i < CLIENTS_COUNT; ++i) {
-        // processEvent
-        // 1 - acceptNewClient
+        // acceptNewClient
         EXPECT_CALL(*rawClientSockets[i], getFd())
             .Times(1)
             .WillOnce(testing::Return(clientFds[i]));
 
-        // 2 - handleClientData
-        // Так как при наличи данных на tcpServer сокете проверяются все клиентские файловые дискрипторы,
-        // то при одном чтении сокета для каждого подключенного клиента будет вызываться мок receive
-        // с заданными параметрами, поэтому стоит сделать так, чтобы на моке отправка данных была только при первом
-        // прочтении сокета каждого из клиентов, а при повторном чтении на том же сокете было пусто (типо больше не присылали)
+        // handleClientData
         EXPECT_CALL(*rawClientSockets[i], receive())
-            .WillOnce(testing::Return(pgw::ITcpSocket::Packet{.data = stringRequest}))
-            .WillRepeatedly(testing::Return(pgw::ITcpSocket::Packet{}));  // Пустые пакеты после первого
+            .WillOnce(testing::Return(pgw::ITcpSocket::Packet{.data = stringRequest}));
 
         EXPECT_CALL(*rawClientSockets[i], send(testing::_))
-            .Times(testing::AtLeast(1))
-            .WillRepeatedly(testing::Return());
+            .Times(testing::AtLeast(1));
 
         EXPECT_CALL(*rawClientSockets[i], close())
             .Times(1);
@@ -262,7 +285,12 @@ TEST_F(TcpServerTest, ManyClientsHandle_Succsess) {
     tcpServer->start();
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
-        tcpServer->processEvent();
+        tcpServer->acceptNewClient();
+    }
+
+    auto clientsFds = tcpServer->getClientsFds();
+    for (int clientFd : clientsFds) {
+        tcpServer->handleClientData(clientFd);
     }
 
     // Assert

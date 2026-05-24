@@ -34,7 +34,13 @@ struct IntegrationTest : public testing::Test {
         createTestConfigs();
     }
     // Метод, вызываемый после всех тестов
-    static void TearDownTestSuite(){}
+    static void TearDownTestSuite(){
+        std::filesystem::remove(CLIENT_CONFIG_FILE);
+        std::filesystem::remove(SERVER_CONFIG_FILE);
+        std::filesystem::remove(CDR_FILE);
+        std::filesystem::remove(LOG_FILE);
+        std::filesystem::remove(DB_FILE);
+    }
     // Метод, вызываемый в начале каждого теста
     void SetUp() override {}
     // Метод, вызываемый в конце каждого теста
@@ -54,6 +60,7 @@ struct IntegrationTest : public testing::Test {
             throw std::runtime_error("Cannot create server test config file");
         }
         serverConfig << R"({
+            "udp_ip": "0.0.0.0",
             "udp_port": 9000,
             "tcp_ip": "0.0.0.0",
             "tcp_port": 9090,
@@ -113,33 +120,55 @@ TEST_F(IntegrationTest, FullUdpWork) {
     pgw::client::Client client2(CLIENT_CONFIG_FILE, IMSI_BLACKLISTED);
     int client2Result = client2.run();
 
-    // Assert 1
+    // Assert 2
     EXPECT_EQ(client2Result, 0);
     EXPECT_EQ(client2.getResponse(), "rejected");
 
     EXPECT_FALSE(serverSessionManager.hasSession(IMSI_BLACKLISTED));
     EXPECT_EQ(serverSessionManager.countActiveSession(), 1);
 
-    // Act 3
+
+    // Arrange 3
     std::vector<pgw::types::imsi_t> imsis = {IMSI2, IMSI3, IMSI4};
+    // Act 3
     for (const auto& imsi : imsis) {
         pgw::client::Client client(CLIENT_CONFIG_FILE, imsi);
         client.run();
         EXPECT_TRUE(serverSessionManager.hasSession(imsi));
     }
-
     // Assert 3
     EXPECT_EQ(serverSessionManager.countActiveSession(), 4);
 
+    // Arrange 4
+    EXPECT_TRUE(serverSessionManager.terminateSession(IMSI2));
+    EXPECT_TRUE(serverSessionManager.terminateSession(IMSI3));
+    EXPECT_TRUE(serverSessionManager.terminateSession(IMSI4));
+    EXPECT_EQ(serverSessionManager.countActiveSession(), 1);
+    std::vector<std::future<int>> clientsFutures;
+    for (const auto& imsi : imsis) {
+        clientsFutures.push_back(std::async(std::launch::async, [this, imsi]() {
+            pgw::client::Client client(CLIENT_CONFIG_FILE, imsi);
+            return client.run();
+        }));
+    }
     // Act 4
-    server.stop();
-
-    // Дождемся полной остановки
-    EXPECT_EQ(serverFuture.get(), 0);
+    for (auto& future : clientsFutures) {
+        EXPECT_EQ(future.get(), 0);
+    }
+    // Assert 4
+    for (const auto& imsi : imsis) {
+        EXPECT_TRUE(serverSessionManager.hasSession(imsi));
+    }
+    EXPECT_EQ(serverSessionManager.countActiveSession(), imsis.size() + 1);
 
     // Act 5
-    auto records = server.getCdrWriter()->getRecentRecords(10);
-
+    server.stop();
     // Assert 5
-    EXPECT_GE(records.size(), 5);  // created для IMSI1 + IMSI2,3,4 + rejected для blacklisted
+    EXPECT_EQ(serverFuture.get(), 0);
+
+    // Act 6
+    auto records = server.getCdrWriter()->getRecentRecords(10);
+    // Assert 6
+    EXPECT_GE(records.size(), 5);  // created для IMSI1 + IMSI2,3,4 + rejected для blacklisted + ...
 }
+
