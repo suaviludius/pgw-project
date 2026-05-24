@@ -36,8 +36,11 @@ void Config::readConfigFile(const std::string& configPath){
     // Присваиваем значения полям конфигурации значениями из файла
     m_udpIp = jsonConfig.value("udp_ip", pgw::constants::server::defaults::UDP_IP); // UdpIp - имя ключа, 0.0.0.0 - значение по умолчанию
     m_udpPort = jsonConfig.value("udp_port", pgw::constants::server::defaults::UDP_PORT);
+<<<<<<< HEAD:src/pgw/server/Config.cpp
     m_tcpIp = jsonConfig.value("tcp_ip", pgw::constants::server::defaults::TCP_IP);
     m_tcpPort = jsonConfig.value("tcp_port", pgw::constants::server::defaults::TCP_PORT);
+=======
+>>>>>>> main:pgw_server/Config.cpp
     int timeoutSec = jsonConfig.value("session_timeout_sec", pgw::constants::server::defaults::TIMEOUT_SEC);
     m_sessionTimeoutSec = std::chrono::seconds(timeoutSec);
     m_databaseFile = jsonConfig.value("database_file",pgw::constants::server::defaults::DATABASE_FILE);

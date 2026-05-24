@@ -50,6 +50,9 @@ find_package(SQLite3 REQUIRED)
 # ========================================
 # ========================================
 
+# Поиск системной SQLite3
+find_package(SQLite3 REQUIRED)
+
 # Общие исходники (статическая библиотека)
 add_library(pgw_common STATIC)
 

@@ -46,6 +46,21 @@ rm -rf build                                                        # Очист
 
 **Зависимости**: C++17, CMake 3.15+, Linux, SQLite3 (остальные тянутся через FetchContent)
 
+## Архитектура
+
+### Основные компоненты сервера
+- **Application** — оркестратор жизненного цикла приложения (инициализация, event loop, shutdown)
+- **UdpServer** — обработка UDP пакетов от абонентов (валидация IMSI, создание сессий)
+- **SessionManager** — управление сессиями (создание, удаление, таймауты, graceful shutdown, blacklist)
+- **HttpServer** — REST API для мониторинга и управления
+- **DatabaseManager** — работа с SQLite (CDR записи, логи событий)
+- **DatabaseSink** — кастомный spdlog sink для записи логов в БД
+- **ICdrWriter** — интерфейс записи CDR (реализации: `DatabaseCdrWriter`, `FileCdrWriter`)
+- **CdrWriterFactory** — фабрика для создания CdrWriter
+- **SocketFactory** — фабрика для создания UDP/TCP сокетов
+- **ISocket / IUdpSocket / ITcpSocket** — иерархия интерфейсов сокетов
+
+
 ## Конфигурация
 
 Примеры лежат в `configs/`. Ключевые параметры:
@@ -78,6 +93,11 @@ rm -rf build                                                        # Очист
 ```bash
 curl "http://localhost:8080/check_subscriber?imsi=001010123456789"
 curl -X POST http://localhost:8080/stop
+# Ответ: Graceful shutdown request set
+
+# Ошибка — отсутствует параметр imsi
+curl "http://localhost:8080/check_subscriber"
+# Ответ: Request error: no imsi  (HTTP 400)
 ```
 ### TCP
 
@@ -229,6 +249,7 @@ classDiagram
     }
 
     class SessionManager {
+        +SessionData : struct
         -m_cdrWriter : ICdrWriter&
         -m_blacklist : Blacklist&
         -m_sessions : unordered_map

@@ -1,5 +1,6 @@
 #include "FileCdrWriter.h"
 
+<<<<<<< HEAD:src/pgw/server/FileCdrWriter.cpp
 #include "pgw/common/logger.h"
 
 #include <sstream>
@@ -50,10 +51,37 @@ void FileCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view a
 
     // Запоминаем позицию перед записью
     std::streampos pos = m_writeFile.tellp();
+=======
+#include "logger.h"
+
+namespace pgw {
+
+FileCdrWriter::FileCdrWriter(pgw::types::constFilePath_t filename){
+    // К сожалению, для open() строка должна содержать '\0' символ
+    m_file.open(static_cast<std::string>(filename), std::ios::app);
+    if(m_file.is_open()){
+        m_file << "CDR strated\n";
+        m_file << "IMSI, Action, Timestamp\n";
+    }
+    LOG_INFO("CDR writer initialized");
+}
+
+FileCdrWriter::~FileCdrWriter(){
+    if(m_file.is_open()){
+        m_file << "CDR ended\n";
+        m_file.close();
+    }
+    LOG_INFO("CDR writer deleted");
+}
+
+void FileCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view action){
+    if (!m_file.is_open()) return;
+>>>>>>> main:pgw_server/FileCdrWriter.cpp
 
     auto now {std::chrono::system_clock::now()}; // формат для вемени
     auto time {std::chrono::system_clock::to_time_t(now)}; // формат для форматирования времени
 
+<<<<<<< HEAD:src/pgw/server/FileCdrWriter.cpp
     m_writeFile << imsi << ", "
                 << action << ", "
                 << std::asctime(std::localtime(&time)); // Преобразует структуру локального врмени в строку
@@ -117,6 +145,13 @@ CdrRecord FileCdrWriter::parseLine(const std::string& line) const {
     }
 
     return record;
+=======
+    m_file  << imsi << ", "
+            << action << ", "
+            << std::asctime(std::localtime(&time)); // Преобразует структуру локального врмени в строку
+
+    m_file.flush();
+>>>>>>> main:pgw_server/FileCdrWriter.cpp
 }
 
 } // namespace pgw
