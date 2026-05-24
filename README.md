@@ -1,55 +1,50 @@
 # Мини-PGW
 
-Упрощенная модель сетевого компонента PGW (Packet Gateway)
+**Упрощенная модель сетевого компонента PGW (Packet Gateway)** с event-driven архитектурой, HTTP API, CDR в SQLite и бинарным TCP-протоколом управления.
 
-## Функционал
-- Event-driven архитектура на основе `poll()` без потоков для UDP
-- Graceful shutdown с контролируемой скоростью удаления сессий
-- HTTP API для мониторинга и управления
-- CDR журналирование в SQLite (с поддержкой файлового режима)
-- Логирование в SQLite через кастомный spdlog sink
-- Черный список IMSI для отклонения запросов
-- Non-blocking UDP сервер без таймера на ожидание данных
-- Инфраструктура для TCP сокетов (готова к расширению)
-- Конфигурация через JSON с валидацией
-- Логирование с поддержкой уровней
+## Быстрый старт
 
-## Требования
-- C++17 компилятор (g++, clang 6+)
-- CMake 3.15+
-- Linux (тестировано на Ubuntu 20.04+)
+```bash
+git clone https://github.com/suaviludius/pgw-project.git
+cd pgw-project
+make docker-start # собрать и запустить всё (сервер + клиент)
+```
+
 
 ## Сборка и запуск
 
 ### Вариант 1: Docker (рекомендуемый)
 ```bash
-make docker-build            # Собрать образы без тестов
-make docker-build-t          # Cобрать образы с тестами
+make docker-start            # Собрать и запустить все сервисы
 make docker-server           # Запустить сервер
 make docker-client           # Запустить клиент
 make docker-test             # Запустить тесты
-make docker-start            # Собрать и запустить все сервисы
-make docker-stop             # Остановить
-make docker-logs             # Логи сервера
-make docker-shell            # Подключиться к контейнеру
+make docker-stop             # Остановить и очистить контейнеры
 ```
 
-### Вариант 2: Локальная сборка
+### Вариант 2: Make команды
 ```bash
-git clone https://github.com/suaviludius/pgw-project.git
-cd pgw-project
-mkdir build && cd build
-cmake ..
-cmake --build . --config Release
+make                        # Конфигурация и сборка проекта
+make server                 # Запустить сервер
+make client                 # Запустить клиент
+make test                   # Запустить тесты
+make clean                  # Очистить сборку
 ```
 
-## Зависимости
-Все зависимости загружаются автоматически через CMake `FetchContent`:
-- nlohmann/json - парсинг JSON конфигурации
-- cpp-httplib - HTTP сервер
-- spdlog - логирование
-- SQLite3 - хранение CDR записей и логов (системная библиотека)
-- googletest - unit тесты (только для тестов)
+### Вариант 3: Локальная сборка
+```bash
+mkdir build && cd build                                             # Конфигурация и сборка проекта
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel $(nproc)
+
+./build/bin/pgw_server configs/pgw_server.json                      # Запуск сервера
+./build/bin/pgw_client configs/pgw_client.json "010203040506070"    # Запуск клиента
+./build/bin/test_integration                                        # Запуск одного теста
+# cd build && ctest -R "^test"                                      # Запуск всех тестов через CTest
+rm -rf build                                                        # Очистить сборку
+```
+
+**Зависимости**: C++17, CMake 3.15+, Linux, SQLite3 (остальные тянутся через FetchContent)
 
 ## Архитектура
 
@@ -67,42 +62,36 @@ cmake --build . --config Release
 
 
 ## Конфигурация
-Примеры файлов конфигурации лежат в папке config:
-- Серверная конфигурация (`configs/pgw_server.json`)
-- Клиентская конфигурация (`configs/pgw_client.json`)
 
-## Использование
-### Запуск сервера
-```bash
-# Запуск с конфигурацией по умолчанию
-./build/src/pgw_server
+Примеры лежат в `configs/`. Ключевые параметры:
 
-# Запуск с указанием конфигурационного файла
-./build/src/pgw_server /path/to/config.json
-```
-### Запуск клиента
-```bash
-# Отправка одного IMSI
-./build/src/pgw_client 001010123456789
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `udp_port` | 9000 | UDP порт для сессий |
+| `tcp_port` | 9090 | TCP порт для команд |
+| `http_port` | 8080 | HTTP API |
+| `session_timeout_sec` | 30 | Таймаут сессии (сек) |
+| `graceful_shutdown_rate` | 10 | Сессий/сек при остановке |
+| `log_level` | INFO | TRACE/DEBUG/INFO/WARN/ERROR/CRITICAL |
+| `blacklist` | [] | Список IMSI, блокируемых при создании |
 
-# Использование конфигурационного файла
-./build/src/pgw_client config.json 001010123456789
-```
+
+## Протоколы
+
+### UDP
+
+- **Формат запроса**: 15 цифр в кодировке ASCII (IMSI)
+- **Формат ответа**: `created`/`rejected` (сессия создана/отклонена)
+
 ### HTTP API
-Сервер предоставляет следующие эндпоинты:
 
-| Метод | Эндпоинт | Формат | Описание |
-|-------|----------|--------|----------|
-| `GET` | `/check_subscriber?imsi=<IMSI>` | `text/plain` | Проверка статуса сессии: `"active"` или `"not active"` |
-| `POST` | `/stop` | `text/plain` | Инициирование graceful shutdown |
+| Метод | Эндпоинт | Описание |
+|-------|----------|----------|
+| `GET` | `/check_subscriber?imsi= ...` | Проверка статуса сессии: `active`/`not active` |
+| `POST` | `/stop` |  Инициирование graceful shutdown |
 
-**Примеры:**
 ```bash
-# Проверить статус абонента
 curl "http://localhost:8080/check_subscriber?imsi=001010123456789"
-# Ответ: active  (или not active)
-
-# Инициировать graceful shutdown
 curl -X POST http://localhost:8080/stop
 # Ответ: Graceful shutdown request set
 
@@ -110,46 +99,59 @@ curl -X POST http://localhost:8080/stop
 curl "http://localhost:8080/check_subscriber"
 # Ответ: Request error: no imsi  (HTTP 400)
 ```
-### Make команды
-```bash
-make            - Собрать проект (Release)
-make configure  - Собрать конфигурацию CMake
-make server     - Запустить сервер
-make client     - Запустить клиент
-make test       - Запустить тесты
-make clean      - Удалить build директорию
-make rebuild    - Полная пересборка
-make help       - Показать эту справку
-```
+### TCP
+
+| Версия | Команда | Статус | Длина пкаета |  Данные   |
+| :----: | :-----: | :----: | :----------: | :-------: |
+| 1 байт | 1 байт  | 1 байт |   4 байта    |  N байт   |
+| `0x01` | `0x00`  | `0x00` | `0x00000000` | json data |
+
+### Команды управления сессиями:
+
+- `GET_STAT` - получение статистики
+- `GET_SESSIONS` - список активных сессий
+- `GET_CDR` - получить CDR записи
+- `START_SESSION`  - принудительно создать сессию
+- `STOP_SESSION`  - принудительно завершить сессию
+- `SHUTDOWN` - graceful shutdown
+
+### Статусы операций
+
+- `OK` - успешное выполнение
+- `ERROR` - общая ошибка
+- `INVALID_COMMAND` - неправильная команда
+- `INVALID_PARAMS` - неправильные параметры с командой
+- `NOT_FOUND` - ресурс не найден
+
 
 ## Тестирование
-Проект содержит набор тестов:
-- `test_config` — валидация конфигурации
-- `test_database` — операции с SQLite (запись CDR, логов, чтение)
-- `test_logger` — логирование и DatabaseSink
-- `test_session_manager` — создание/удаление сессий, blacklist, таймауты
-- `test_udp_server` — обработка пакетов, валидация IMSI
-- `test_integration` — интеграционное тестирование компонентов
 
 ```bash
-# Запуск тестов локально
-make test
-
-# Запуск тестов через Docker
-make docker-test
+make docker-test                        # Запуск контейнера с тестами
+make test                               # Запуск всех тетсов
+./build/bin/test_integration            # Запуск одного теста
+cd build && ctest -R "^test"            # Запуск всех тетсов через CTest
 ```
 
-## UDP протокол
+Проект содержит набор тестов:
+- `test_config` - валидация JSON-конфигурации
+- `test_database` - интерфейсные операции с SQLite
+- `test_database_cdr_writer` - операции с SQLite на создание таблицы/записи/чтения CDR
+- `test_logger` - логирование через spdlog
+- `test_session_manager` - создание/удаление сессий, blacklist, таймауты
+- `test_tcp_handler` - обработка tcp команд
+- `test_tcp_serializer` - создание и парсинг tcp сообщений
+- `test_tcp_server` - прием данных с сокета, обработка, формировние ответа
+- `test_udp_server` - обработка пакетов, валидация IMSI
+- `test_integration_udp` - взаимодействие UDP клиента и сервера
+- `test_integration_tcp` - взаимодействие TCP клиента и сервера
 
-Формат запроса
-- IMSI: 15 цифр в кодировке ASCII (Пример: "`001010123456789`")
 
-Формат ответа
-- "`created`" - сессия создана
-- "`rejected`" - сессия отклонена (blacklist или уже существует)
 
 ## UML диаграммы
+
 ### Обработка UDP запроса
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -163,118 +165,139 @@ sequenceDiagram
 
     Note over C,CW: Результат проверки IMSI
     alt Неправильный
-        US-->>C: 3: Ответ: cессия rejected
+        US-->>C: 3a: Ответ: cессия rejected
         deactivate US
     else Правильный: Created
         activate US
-        US->>SM: 3: Создание сессии для IMSI
+        US->>SM: 3b: Создание сессии для IMSI
         activate SM
-        SM->>SM: 4: Проверка IMSI по черному списку
-        SM->>SM: 5: Проверка IMSI по активным сессиям
-        SM->>CW: 6: Запись CDR: time IMSI "created"
-        SM-->>US: 7: Результат создания сессии: CREATED
+        SM->>SM: 4b: Проверка IMSI по черному списку
+        SM->>SM: 5b: Проверка IMSI по активным сессиям
+        SM->>CW: 6b: Запись CDR: time IMSI "created"
+        SM-->>US: 7b: Результат создания сессии: CREATED
         deactivate SM
-        US-->>C: 8: Ответ: cессия "created"
+        US-->>C: 8b: Ответ: cессия "created"
         deactivate US
     else Правильный: Rejected
         activate US
-        US->>SM: 3: Создание сессии для IMSI
+        US->>SM: 3c: Создание сессии для IMSI
         activate SM
-        SM->>SM: 4: Проверка IMSI по черному списку
-        SM->>SM: 5: Проверка IMSI по активным сессиям
-        SM->>CW: 6: Запись CDR: time IMSI "rejected"
-        SM-->>US: 7: Результат создания сессии: REJECTED
+        SM->>SM: 4c: Проверка IMSI по черному списку
+        SM->>SM: 5c: Проверка IMSI по активным сессиям
+        SM->>CW: 6c: Запись CDR: time IMSI "rejected"
+        SM-->>US: 7c: Результат создания сессии: REJECTED
         deactivate SM
-        US-->>C: 8: Ответ: cессия "rejected"
+        US-->>C: 8c: Ответ: cессия "rejected"
         deactivate US
     end
 ```
 
+### Обработка TCP команд
+
+```mermaid
+sequenceDiagram
+    participant H as HMI (TCP клиент)
+    participant TS as TcpServer
+    participant TH as TcpHandler
+    participant SM as SessionManager
+    participant DB as DatabaseManager
+    participant CW as CdrWriter
+
+    H->>TS: 1: Бинарный пакет (команда + JSON)
+    activate TS
+    TS->>TS: 2: Буферизация, чтение данных
+    TS->>TH: 3: Передача raw-сообщения
+    activate TH
+    TH->>TH: 4: Десериализация заголовка
+    TH->>TH: 5: Определение типа команды
+
+    alt GET_STATS / GET_SESSIONS
+        TH->>SM: 6a: getStatistics() / getActiveSessions()
+        SM-->>TH: 7a: Данные статистики / список сессий
+    else GET_CDR
+        TH->>DB: 6b: getRecentCdr(limit)
+        DB-->>TH: 7b: Записи CDR
+    else START_SESSION / STOP_SESSION
+        TH->>SM: 6c: createSession(imsi) / terminateSession(imsi)
+        SM->>CW: 7c: writeAction(imsi, action)
+        SM-->>TH: 8c: Результат операции
+    else SHUTDOWN
+        TH->>TH: 6d: Установка флага завершения
+        TH-->>H: 7d: Подтверждение (без дополнительных вызовов)
+    end
+
+    TH->>TH: 9: Формирование JSON-ответа (статус + данные)
+    TH->>TS: 10: Сериализация ответа в бинарный пакет
+    TS->>H: 11: Отправка ответа клиенту
+    deactivate TH
+    deactivate TS
+```
+
 ### Структура классов сервера
+
 ```mermaid
 classDiagram
     class ISessionManager {
         <<interface>>
-        +CreateResult : enum class
-        +createSession(imsi : imsi_t) CreateResult
-        +hasSession(imsi : imsi_t) bool
-        +addToBlacklist(imsi : imsi_t) bool
+        +createSession(imsi) CreateResult
+        +hasSession(imsi) bool
+        +addToBlacklist(imsi) bool
         +countActiveSession() size_t
+        +getActiveSessions() sessions
+        +getStatistics() Statistics
+        +terminateSession(imsi) bool
     }
 
     class SessionManager {
         +SessionData : struct
         -m_cdrWriter : ICdrWriter&
-        -m_sessions : unordered_map~imsi_t, SessionData~
         -m_blacklist : Blacklist&
+        -m_sessions : unordered_map
         -m_shutdownRate : rate_t
         -m_sessionTimeoutSec : seconds_t
+        -m_stats : Statistics
+        -m_startTime : time_point
 
-        +SessionManager(...)
         +cleanTimeoutSessions() void
         +gracefulShutdown() void
-        +terminateSession(imsi : imsi_t) void
     }
 
     class ICdrWriter {
         <<interface>>
-        +SESSION_CREATED : string_view
-        +SESSION_DELETED : string_view
-        +SESSION_REJECTED : string_view
-        +writeAction(imsi : imsi_t, action : string_view) void
+        +writeAction(imsi, action) void
+        +getRecentRecords(limit) vector~CdrRecord~
+        +getRecordCount() optional~int~
     }
 
     class DatabaseCdrWriter {
-        -m_dbManager : DatabaseManager&
-        +DatabaseCdrWriter(dbManager : DatabaseManager&)
+        -m_db : shared_ptr~DatabaseManager~
     }
 
     class FileCdrWriter {
-        -m_file : ofstream
-        +FileCdrWriter(filename : filePath_t)
+        -m_filename : string
+        -m_writeFile : ofstream
+        -m_readFile : ifstream
+        -m_index : vector~streampos~
+        -m_recordCount : int
+
     }
 
     class CdrWriterFactory {
-        +createDatabaseCdrWriter(dbManager : DatabaseManager&) unique_ptr~ICdrWriter~
-        +createFileCdrWriter(filename : filePath_t) unique_ptr~ICdrWriter~
+        +createDatabase(db) unique_ptr~ICdrWriter~$
+        +createFile(filename) unique_ptr~ICdrWriter~$
     }
+
+    class IDatabaseManager {
+        <<interface>>
+        +isConnected() bool
+        +initialize() bool
+        +execute(sql) bool
+    }
+
 
     class DatabaseManager {
         -m_db : sqlite3*
         -m_dbPath : string
-        +initialize() bool
-        +writeCdr(imsi : string_view, action : string_view) bool
-        +writeLog(level : string_view, message : string_view, timestamp : string_view) bool
-        +getRecentCdr(limit : size_t) vector~CdrRecord~
-        +getRecentEvents(limit : size_t) vector~EventRecord~
-    }
-
-    class DatabaseSink {
-        -m_dbManager : shared_ptr~DatabaseManager~
-        +DatabaseSink(dbManager : shared_ptr~DatabaseManager~)
-        -sink_it_(msg : log_msg) void
-    }
-
-    class ISocket {
-        <<interface>>
-        +Packet : struct
-        +close() void
-        +getFd() int
-        +getAddr() sockaddr_in
-    }
-
-    class IUdpSocket {
-        <<interface>>
-        +bind(ip : ip_t, port : port_t) void
-        +send(data : string_view, addr : sockaddr_in) void
-        +send(data : string_view, ip : ip_t, port : port_t) void
-        +receive() Packet
-    }
-
-    class SocketFactory {
-        +createUdp() unique_ptr~IUdpSocket~
-        +createTcp(isListening : bool) unique_ptr~ITcpSocket~
-        +create(type : SocketType, isListening : bool) unique_ptr~ISocket~
     }
 
     class UdpServer {
@@ -284,69 +307,95 @@ classDiagram
         -m_port : port_t
         -m_running : bool
 
-        +UdpServer(...)
         +start() void
         +stop() void
-        +handler() void
-        +validateImsi(imsi : string) bool
+        +processEvent() void
+        +validateImsi(imsi) bool
+    }
+
+    class TcpServer {
+        -m_commandHandler : ITcpHandler&
+        -m_socket : unique_ptr~ITcpSocket~
+        -m_ip : ip_t
+        -m_port : port_t
+        -m_running : bool
+        -m_clients : unordered_map
+
+        +start() void
+        +stop() void
+        +processEvent() void
     }
 
     class HttpServer {
-        -Status : enum class
         -m_sessionManager : ISessionManager&
         -m_server : unique_ptr~httplib::Server~
         -m_port : port_t
+        -m_running : bool
         -m_serverThread : thread
         -m_shutdownRequest : atomic~bool~&
 
-        +HttpServer(...)
         +start() void
         +stop() void
-        +setRoutes() void
-        +handleSubscriberCheck(req, res) void
-        +handleShutdown(req, res) void
     }
 
-    class Application {
+    class ITcpHandler {
+        <<interface>>
+        +handle(request) Message
+    }
+
+    class TcpHandler {
+        -m_sessionManager : ISessionManager&
+        -m_dbManager : shared_ptr~IDatabaseManager~
+        -m_shutdownRequest : atomic~bool~&
+    }
+
+    class TcpSerializer {
+        +serializer(msg) vector~uint8_t~$
+        +deserializer(buffer) optional~Message~$
+        +createJsonMsg(command, status, jsonData) Message$
+        +getJsonData(msg) json$
+    }
+
+    class Server {
         -m_config : unique_ptr~Config~
         -m_shutdownRequest : atomic~bool~
         -m_dbManager : shared_ptr~DatabaseManager~
         -m_cdrWriter : unique_ptr~ICdrWriter~
         -m_sessionManager : unique_ptr~SessionManager~
+        -m_tcpHandler : unique_ptr~TcpHandler~
+        -m_tcpServer : unique_ptr~TcpServer~
         -m_udpServer : unique_ptr~UdpServer~
         -m_httpServer : unique_ptr~HttpServer~
 
-        +Application(configPath : string)
         +run() int
-        -runEventLoop() void
-        -shutdown() void
+        +stop() void
+        +getSessionManager() ISessionManager&
+        +getCdrWriter() shared_ptr~ICdrWriter~
     }
-
-    Application --> DatabaseManager : содержит
-    Application --> ICdrWriter : содержит
-    Application --> SessionManager : содержит
-    Application --> HttpServer : содержит
-    Application --> UdpServer : содержит
-
 
     ISessionManager <|.. SessionManager : реализует
     SessionManager --> ICdrWriter : использует
-
-    HttpServer --> ISessionManager : использует
-
-    UdpServer --> ISessionManager : использует
-    UdpServer --> IUdpSocket : содержит
-
-
     ICdrWriter <|.. DatabaseCdrWriter : реализует
     ICdrWriter <|.. FileCdrWriter : реализует
-    CdrWriterFactory ..> ICdrWriter : создает
+    CdrWriterFactory ..> ICdrWriter : создаёт
+    DatabaseCdrWriter --> IDatabaseManager : использует
+    IDatabaseManager <|.. DatabaseManager : реализует
 
-    DatabaseCdrWriter --> DatabaseManager : использует
-    DatabaseSink --> DatabaseManager : использует
+    Server --> SessionManager : содержит
+    Server --> DatabaseManager : содержит
+    Server --> CdrWriterFactory : использует
+    Server --> UdpServer : содержит
+    Server --> TcpServer : содержит
+    Server --> HttpServer : содержит
 
-    ISocket <|.. IUdpSocket : расширяет
-    SocketFactory ..> IUdpSocket : создает
+    UdpServer --> ISessionManager : использует
 
+    TcpServer --> ITcpHandler : использует
+    ITcpHandler <|.. TcpHandler : реализует
+    TcpHandler --> ISessionManager : использует
+    TcpHandler --> ICdrWriter : использует
+    TcpHandler --> TcpSerializer : использует
+
+    HttpServer --> ISessionManager : использует
 ```
 

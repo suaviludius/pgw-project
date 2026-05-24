@@ -3,13 +3,14 @@ services:
   pgw_server:
     build:
       context: .
-      target: runtime
+      target: server
       args:
-        BUILD_TESTS: "OFF"
+        BUILD_TYPE: Release
     container_name: pgw_server
     ports:
-      - "9000:9000/udp"  # UDP порт для сессий
-      - "8080:8080/tcp"  # HTTP API
+      - "9000:9000/udp"
+      - "9090:9090/tcp"
+      - "8080:8080/tcp"
     volumes:
       - ./configs:/app/configs:ro
       - pgw_logs:/app/logs
@@ -17,8 +18,8 @@ services:
     environment:
       - TZ=Europe/Moscow
     restart: unless-stopped
-    command: ["./pgw_server", "configs/pgw_server.docker.json"]
     healthcheck:
+      # Здесь мы просто отправляем тетсовую команду серверу, чтобы проверить запустился ли он
       test: ["CMD", "curl", "-f", "http://localhost:8080/check_subscriber?imsi=001010123456789"]
       interval: 30s
       timeout: 10s
@@ -31,17 +32,18 @@ services:
   pgw_client:
     build:
       context: .
-      target: runtime
+      target: client
     container_name: pgw_client
     depends_on:
       pgw_server:
         condition: service_healthy
     volumes:
       - ./configs:/app/configs:ro
+      - pgw_logs:/app/logs
     environment:
       - TZ=Europe/Moscow
-    # Клиент запускается один раз для теста с Docker конфигом
-    command: ["./pgw_client", "configs/pgw_client.docker.json", "001010123456789"]
+    profiles:
+      - manual
     networks:
       - pgw_network
 
@@ -49,21 +51,14 @@ services:
   test_runner:
     build:
       context: .
-      target: builder
-      args:
-        BUILD_TESTS: "ON"
+      target: testing
     container_name: pgw_tests
-    working_dir: /build
+    working_dir: /tests
     volumes:
-      - ./configs:/build/configs:ro
-    command: [
-      "sh", "-c",
-      "./tests/test_config &&
-       ./tests/test_logger &&
-       ./tests/test_session_manager &&
-       ./tests/test_udp_server &&
-       ./tests/test_integration"
-    ]
+      - ./configs:/tests/configs:ro
+      - pgw_logs:/tests/logs
+    environment:
+      - TZ=Europe/Moscow
     profiles:
       - test
     networks:

@@ -8,6 +8,13 @@ add_executable(
     unit/test_logger.cpp
 )
 add_executable(
+    test_database
+    unit/test_database.cpp
+)
+add_executable(test_database_cdr_writer
+    unit/test_database_cdr_writer.cpp
+)
+add_executable(
     test_session_manager
     unit/test_session_manager.cpp
 )
@@ -16,75 +23,180 @@ add_executable(
     unit/test_udp_server.cpp
 )
 add_executable(
-    test_database
-    unit/test_database.cpp
+    test_tcp_serializer
+    unit/test_tcp_serializer.cpp
 )
 add_executable(
-    test_integration
-    integration/test_integration.cpp
+    test_tcp_handler
+    unit/test_tcp_handler.cpp
+)
+add_executable(
+    test_tcp_server
+    unit/test_tcp_server.cpp
+)
+add_executable(
+    test_integration_udp
+    integration/test_integration_udp.cpp
+)
+add_executable(
+    test_integration_tcp
+    integration/test_integration_tcp.cpp
 )
 
 # Добавляем файлы, которые будем тестировать
 target_sources(
     test_config PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
 )
 target_sources(
     test_logger PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/logger.cpp
-    ${CMAKE_SOURCE_DIR}/src/DatabaseManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+)
+target_sources(
+    test_database PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+)
+target_sources(
+    test_database_cdr_writer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+     ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
 )
 target_sources(
     test_session_manager PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
 )
 target_sources(
     test_udp_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
 )
 target_sources(
-    test_integration PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_client/Config.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/Config.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/FileCdrWriter.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/DatabaseCdrWriter.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/CdrWriterFactory.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/SessionManager.cpp
-    ${CMAKE_SOURCE_DIR}/pgw_server/UdpServer.cpp
+    test_tcp_serializer PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+)
+target_sources(
+    test_tcp_handler PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+)
+target_sources(
+    test_tcp_server PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
+)
+target_sources(
+    test_integration_udp PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/client/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/client/Client.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/CdrWriterFactory.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/HttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
+)
+target_sources(
+    test_integration_tcp PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/CdrWriterFactory.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/HttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
 )
 
 # Подключаем заголовочные файлы
 target_include_directories(
     test_config PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_logger PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_database PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_database_cdr_writer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_session_manager PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
     test_udp_server PRIVATE
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
     ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_server
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 target_include_directories(
-    test_integration PRIVATE
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/configs
+    test_tcp_serializer PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/pgw_client
-    ${CMAKE_SOURCE_DIR}/pgw_server
-    ${CMAKE_SOURCE_DIR}/pgw_server/interfaces
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+)
+target_include_directories(
+    test_tcp_handler PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_tcp_server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_integration_udp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/include/pgw/client
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/client
+)
+target_include_directories(
+    test_integration_tcp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
 )
 
 # Зависимости загруженны в главном CMakeList
@@ -102,6 +214,18 @@ target_link_libraries(
     spdlog::spdlog
 )
 target_link_libraries(
+    test_database PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+)
+target_link_libraries(
+    test_database_cdr_writer PRIVATE
+    pgw_common
+    GTest::gtest_main
+    GTest::gtest_main
+)
+target_link_libraries(
     test_session_manager PRIVATE
     pgw_common
     GTest::gtest
@@ -116,6 +240,28 @@ target_link_libraries(
     GTest::gmock        # Для mock
 )
 target_link_libraries(
+    test_tcp_serializer PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+    nlohmann_json::nlohmann_json
+)
+target_link_libraries(
+    test_tcp_handler PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+)
+target_link_libraries(
+    test_tcp_server PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+)
+target_link_libraries(
     test_database PRIVATE
     pgw_common
     GTest::gtest
@@ -123,7 +269,17 @@ target_link_libraries(
     SQLite::SQLite3
 )
 target_link_libraries(
-    test_integration PRIVATE
+    test_integration_udp PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
+    GTest::gmock        # Для mock
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    httplib::httplib
+)
+target_link_libraries(
+    test_integration_tcp PRIVATE
     pgw_common
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
@@ -140,13 +296,25 @@ configure_file(
     COPYONLY
 )
 
+target_compile_definitions(test_config PRIVATE LOG_OFF)
+target_compile_definitions(test_database PRIVATE LOG_OFF)
+target_compile_definitions(test_database_cdr_writer PRIVATE LOG_OFF)
+target_compile_definitions(test_session_manager PRIVATE LOG_OFF)
+target_compile_definitions(test_udp_server PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_serializer PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_handler PRIVATE LOG_OFF)
+target_compile_definitions(test_tcp_server PRIVATE LOG_OFF)
+
 # Регистрация тестов в CTest
 enable_testing()
 add_test(NAME test_config COMMAND test_config)
 add_test(NAME test_logger COMMAND test_logger)
+add_test(NAME test_database COMMAND test_database)
+add_test(NAME test_database_cdr_writer COMMAND test_database_cdr_writer)
 add_test(NAME test_session_manager COMMAND test_session_manager)
 add_test(NAME test_udp_server COMMAND test_udp_server)
-add_test(NAME test_database COMMAND test_database)
-add_test(NAME test_integration COMMAND test_integration
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+add_test(NAME test_tcp_serializer COMMAND test_tcp_serializer)
+add_test(NAME test_tcp_handler COMMAND test_tcp_handler)
+add_test(NAME test_tcp_server COMMAND test_tcp_server)
+add_test(NAME test_integration_udp COMMAND test_integration_udp WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(NAME test_integration_tcp COMMAND test_integration_tcp WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

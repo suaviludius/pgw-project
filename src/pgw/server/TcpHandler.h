@@ -1,0 +1,49 @@
+#ifndef PGW_TCP_HANDLER_H
+#define PGW_TCP_HANDLER_H
+
+#include "pgw/server/interfaces/ITcpHandler.h"
+#include "pgw/server/interfaces/ISessionManager.h"
+#include "pgw/server/interfaces/IDatabaseManager.h"
+
+#include <nlohmann/json.hpp>
+
+#include <atomic>
+
+// Обработчик команд от TCP клиентов
+// Отвечает за разбор протокола, выполнение команд и формирование ответов
+
+namespace pgw {
+
+
+class TcpHandler : public ITcpHandler {
+private:
+    // Ссылка на менеджер сессий (ассоциация)
+    ISessionManager& m_sessionManager;
+
+    // Указатель на раздельное владение
+    std::shared_ptr<ICdrWriter> m_cdrWriter;
+
+    // Ссылка на атомик завершения сессии
+    std::atomic<bool>& m_shutdownRequest;
+
+public:
+    TcpHandler(ISessionManager& sessionManager,
+               std::shared_ptr<ICdrWriter> m_cdrWriter,
+               std::atomic<bool>& shutdownRequest);
+    ~TcpHandler() = default;
+
+    protocol::Message handle(const protocol::Message& request) override;
+
+private:
+    protocol::Message handleGetStats();
+    protocol::Message handleGetSessions();
+    protocol::Message handleGetCdr(const nlohmann::json& params);
+    protocol::Message handleStartSession(const nlohmann::json& params);
+    protocol::Message handleStopSession(const nlohmann::json& params);
+    protocol::Message handleShutdown();
+};
+
+
+} // namespace pgw
+
+#endif // PGW_TCP_HANDLER_H

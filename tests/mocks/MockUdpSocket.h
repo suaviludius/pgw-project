@@ -1,8 +1,13 @@
 #ifndef MOCK_UDP_SOCKET_H
 #define MOCK_UDP_SOCKET_H
 
+<<<<<<< HEAD
+#include "pgw/common/interfaces/IUdpSocket.h"
+#include "pgw/common/SocketUtils.h"
+=======
 #include "IUdpSocket.h"
 #include "SocketUtils.h"
+>>>>>>> main
 
 #include <gmock/gmock.h>
 

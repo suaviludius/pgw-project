@@ -9,20 +9,25 @@ completedColumns:
 
 ## Backlog
 
-- [feat-hmi-приложение-qt-qml](tasks/feat-hmi-приложение-qt-qml.md)
 - [feat-hmi-ui-компоненты](tasks/feat-hmi-ui-компоненты.md)
-- [test-unit-тесты](tasks/test-unit-тесты.md)
-- [test-integration-тесты](tasks/test-integration-тесты.md)
 - [refactor-Провести-изменения-в-соответсвии-с-принципами-dry](tasks/refactor-Провести-изменения-в-соответсвии-с-принципами-dry.md)
-- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
-- [feat-Сборщик-статистики](tasks/feat-Сборщик-статистики.md)
 - [refactor-Изменения-по-принципами-хорошего-тона](tasks/refactor-Изменения-по-принципами-хорошего-тона.md)
 
 ## Todo
 
+- [feat-hmi-приложение-qt-qml](tasks/feat-hmi-приложение-qt-qml.md)
+- [todo-Ожидающие-фикса-проблемки](tasks/todo-Ожидающие-фикса-проблемки.md)
+
 ## In Progress
+
+- [test-integration-тесты](tasks/test-integration-тесты.md)
+- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
+- [test-unit-тесты](tasks/test-unit-тесты.md)
 
 ## Done
 
 - [feat-sqlite-интеграция](tasks/feat-sqlite-интеграция.md)
+- [feat-Сборщик-статистики](tasks/feat-Сборщик-статистики.md)
+- [fix-dependency-inversion-для-tcp-handler-cdr-writer-database-manager](tasks/fix-dependency-inversion-для-tcp-handler-cdr-writer-database-manager.md)
 - [refactor-Редактирование-программы-в-соответсвии-с-принципами-solid](tasks/refactor-Редактирование-программы-в-соответсвии-с-принципами-solid.md)
+- [refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include](tasks/refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include.md)
