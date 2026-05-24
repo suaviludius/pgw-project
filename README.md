@@ -46,21 +46,6 @@ rm -rf build                                                        # Очист
 
 **Зависимости**: C++17, CMake 3.15+, Linux, SQLite3 (остальные тянутся через FetchContent)
 
-## Архитектура
-
-### Основные компоненты сервера
-- **Application** — оркестратор жизненного цикла приложения (инициализация, event loop, shutdown)
-- **UdpServer** — обработка UDP пакетов от абонентов (валидация IMSI, создание сессий)
-- **SessionManager** — управление сессиями (создание, удаление, таймауты, graceful shutdown, blacklist)
-- **HttpServer** — REST API для мониторинга и управления
-- **DatabaseManager** — работа с SQLite (CDR записи, логи событий)
-- **DatabaseSink** — кастомный spdlog sink для записи логов в БД
-- **ICdrWriter** — интерфейс записи CDR (реализации: `DatabaseCdrWriter`, `FileCdrWriter`)
-- **CdrWriterFactory** — фабрика для создания CdrWriter
-- **SocketFactory** — фабрика для создания UDP/TCP сокетов
-- **ISocket / IUdpSocket / ITcpSocket** — иерархия интерфейсов сокетов
-
-
 ## Конфигурация
 
 Примеры лежат в `configs/`. Ключевые параметры:
