@@ -63,7 +63,7 @@ void UdpServer::stop(){
 }
 
 // Метод раcсчитан на использование с менеджером poll, epoll, select
-void UdpServer::handler(){
+void UdpServer::processEvent(){
     if(!m_running) {
         LOG_INFO("UDP server not running");
         return;
