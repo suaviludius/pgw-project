@@ -54,7 +54,8 @@ test:
 		./$(BUILD_DIR)/bin/test_tcp_serializer && \
 		./$(BUILD_DIR)/bin/test_tcp_handler && \
 		./$(BUILD_DIR)/bin/test_tcp_server && \
-		./$(BUILD_DIR)/bin/test_integration
+		./$(BUILD_DIR)/bin/test_integration_udp && \
+		./$(BUILD_DIR)/bin/test_integration_tcp
 
 # Очистить сборку
 clean:
