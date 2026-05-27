@@ -122,10 +122,10 @@ void TcpServer::processEvent(){
     }
 }
 
-void TcpServer::acceptNewClient(){
+int TcpServer::acceptNewClient(){
     if(!m_running) {
         LOG_INFO("TCP server not running");
-        return;
+        return -1;
     }
 
     try{
@@ -147,21 +147,25 @@ void TcpServer::acceptNewClient(){
 
             // Информация про ip : port выводится при accept() сокетом, а тут подытожим
             LOG_INFO("New TCP client connected: {}", clientFd);
+
+            return clientFd;
         }
     }
     catch(const std::exception& e){
         LOG_ERROR("Accept client error: {}", e.what());
+        return -1;
     }
+    return -1;
 }
 
 
-void TcpServer::handleClientData(int clientFd){
+bool TcpServer::handleClientData(int clientFd){
     // Нет такого дискриптора
-    if (m_clients.find(clientFd) == m_clients.end()) return;
+    if (m_clients.find(clientFd) == m_clients.end()) return 0;
 
     // Сокета уже закрылся
     auto& client = m_clients[clientFd];
-    if (!client.socket) return;
+    if (!client.socket) return 0;
 
     try{
         // Неблокирующий режим сокета - наше всё!
@@ -174,7 +178,7 @@ void TcpServer::handleClientData(int clientFd){
             if (recv(clientFd, buf, 0, MSG_PEEK) == 0) {
                 removeClient(clientFd);
             }
-            return;
+            return 0;
         }
 
         // Сюда читаются все данные с сокета
@@ -207,11 +211,12 @@ void TcpServer::handleClientData(int clientFd){
             size_t consumed = sizeof(protocol::MessageHeader) + msg->header.length;
             client.readBuffer.erase(client.readBuffer.begin(), client.readBuffer.begin() + consumed);
         }
-
+        return 1;
     }
     catch(const std::exception& e){
         LOG_ERROR("Handle client {} data error: {}",clientFd, e.what());
         removeClient(clientFd);
+        return 0;
     }
 }
 
@@ -224,15 +229,6 @@ void TcpServer::removeClient(int clientFd){
         m_clients.erase(it);
         LOG_DEBUG("TCP client removed, fd: {}", clientFd);
     }
-}
-
-std::vector<int> TcpServer::getClientsFds() const {
-    std::vector<int> clientFds;
-    clientFds.reserve(m_clients.size());
-    for (const auto& [fd, client] : m_clients) {
-        clientFds.push_back(fd);
-    }
-    return clientFds;
 }
 
 } // namespace pgw

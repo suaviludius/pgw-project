@@ -11,7 +11,7 @@
 #include "UdpServer.h"
 #include "HttpServer.h"
 
-#include <poll.h>
+#include <sys/epoll.h>
 #include <chrono>
 #include <iostream>
 #include <cerrno>
@@ -227,92 +227,94 @@ bool Server::Impl::initializeServers() {
 }
 
 void Server::Impl::runEventLoop() {
-    // Настройка poll для отслеживания TCP и UDP сокетов
+    // Создаём epoll-дескриптор
+    int epollFd = epoll_create1(0);
+
+    if (epollFd == -1) {
+        LOG_CRITICAL("Epoll create failed: {}", strerror(errno));
+        return;
+    }
+
+    // Вспомогательная лямбда для добавления fd в epoll
+    auto addToEpoll = [epollFd](int fd, uint32_t events) {
+        struct epoll_event ev;
+        ev.events = events;
+        ev.data.fd = fd;
+        if (epoll_ctl(epollFd,EPOLL_CTL_ADD,fd,&ev) == -1) {
+            LOG_ERROR("epoll_ctl add failed for fd {} : {}", fd, strerror(errno));
+        }
+    };
+
+    // Серверный UDP сокет
+    if (m_udpServer && m_udpServer->isRunning()){
+        addToEpoll(m_udpServer->getFd(), EPOLLIN);
+    }
+
+    // Серверный TCP сокет
+    if (m_tcpServer && m_tcpServer->isRunning()) {
+        addToEpoll(m_tcpServer->getFd(), EPOLLIN);
+    }
+
+    // Настройка epoll для отслеживания TCP и UDP сокетов
     constexpr int MAX_FDS = 10;
-    std::vector<struct pollfd> fds;
+    struct epoll_event events[MAX_FDS];
 
     // Таймер для периодической очистки просроченных сессий
     auto lastCleanup = std::chrono::steady_clock::now();
 
     // Основной цикл обработки событий
     while (!m_shutdownRequest.load(std::memory_order_acquire)) {
+        // Ожидание событий на всех сокетах с таймаутом, вернет количество сигналов
+        int nfds = epoll_wait(epollFd, events, MAX_FDS, POLL_TIMEOUT_MS);
 
-        // Индексы для фиксации позиций серверов
-        int udpIdx = -1;
-        int tcpIdx = -1;
-
-        // UDP сокет
-        if (m_udpServer && m_udpServer->isRunning()){
-            fds.push_back({
-                .fd = m_udpServer->getFd(),
-                .events = POLLIN,
-                .revents = 0
-            });
-            udpIdx = fds.size() - 1;
-        }
-
-        // TCP сокет
-        if (m_tcpServer && m_tcpServer->isRunning()) {
-            fds.push_back({
-                .fd = m_tcpServer->getFd(),
-                .events = POLLIN,
-                .revents = 0
-            });
-            tcpIdx = fds.size() - 1;
-        }
-
-        // Добавляем клиентские сокеты динамически
-        auto clientsFds = m_tcpServer->getClientsFds();
-        for (int clientFd : clientsFds) {
-            fds.push_back({
-                .fd = clientFd,
-                .events = POLLIN,
-                .revents = 0
-            });
-        }
-
-        // Ожидание событий на всех сокетах с таймаутом
-        int ready = poll(fds.data(), fds.size(), POLL_TIMEOUT_MS);
-
-        if (ready == -1) {
+        if (nfds == -1) {
             if (errno == EINTR) continue; // Прервано сигналом, продолжаем
-            LOG_ERROR("Poll error: {}", strerror(errno));
+            LOG_ERROR("Epoll error: {}", strerror(errno));
             break;
         }
 
-        // Обработка UDP пакетов, если есть данные
-        if (udpIdx != -1 && (fds[udpIdx].revents & POLLIN)) {
-            m_udpServer->processEvent();
-        }
+        // Получаем количество сокетов, что хотят разговаривать
+        for (int i = 0; i < nfds; ++i) {
+            int fd = events[i].data.fd;
+            uint32_t ev = events[i].events;
 
-        // Обработка подключений TCP сервера
-        if (tcpIdx != -1 && (fds[tcpIdx].revents & POLLIN)) {
-            // Новый клиент пытается подключиться
-            m_tcpServer->acceptNewClient();
-        }
-
-        // Так мы узнаем индекс первого клиента
-        size_t firstClientIdx = (udpIdx != -1 ? 1 : 0) + (tcpIdx != -1 ? 1 : 0);
-
-        // Обработка команд TCP сервера
-        for (size_t i = firstClientIdx; i < fds.size(); ++i) {
-            if (fds[i].revents & (POLLIN | POLLHUP | POLLERR)) {
-                // Передаем конкретный fd клиента, в котором произошло событие.
-                m_tcpServer->handleClientData(fds[i].fd);
+            // Определяем, что это за сокет (по fd)
+            // Серверный UDP соккет ???
+            if (m_udpServer && fd == m_udpServer->getFd()) {
+                if (ev & EPOLLIN) m_udpServer->processEvent();
+            }
+            // Серверный TCP соккет ???
+            else if (m_tcpServer && fd == m_tcpServer->getFd()) {
+                if (ev & EPOLLIN) {
+                    int clientFd = m_tcpServer->acceptNewClient();
+                    if (clientFd != -1) {
+                        // Добавить клиентский сокет в epoll
+                        addToEpoll(clientFd, EPOLLIN | EPOLLRDHUP);
+                    }
+                }
+            }
+            // Клиентский TCP соккет !!!
+            else {
+                if (ev & (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+                    if (!m_tcpServer->handleClientData(fd)) {
+                        // Если соединение закрыто, удаляем из epoll
+                        epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
+                    }
+                }
             }
         }
 
-         if (ready == 0) {
-            // Таймаут, переходим к периодическим задачам
-            auto now = std::chrono::steady_clock::now();
+        // Таймаут, переходим к периодическим задачам
+        auto now = std::chrono::steady_clock::now();
 
-            // Очистка просроченных сессий
-            if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S)) {
-                m_sessionManager->cleanTimeoutSessions();
-                lastCleanup = now;
-            }
+        // Очистка просроченных сессий
+        if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S)) {
+            m_sessionManager->cleanTimeoutSessions();
+            lastCleanup = now;
         }
     }
+
+    close(epollFd);
 }
 
 void Server::Impl::shutdown() {

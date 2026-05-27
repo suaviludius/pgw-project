@@ -283,12 +283,12 @@ TEST_F(TcpServerTest, ManyClientsHandle_Succsess) {
 
     // Act
     tcpServer->start();
+    std::vector<int> clientsFds;
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
-        tcpServer->acceptNewClient();
+        clientsFds.push_back(tcpServer->acceptNewClient());
     }
 
-    auto clientsFds = tcpServer->getClientsFds();
     for (int clientFd : clientsFds) {
         tcpServer->handleClientData(clientFd);
     }
