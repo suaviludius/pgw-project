@@ -27,9 +27,12 @@ configure:
 	@mkdir -p $(BUILD_DIR)
 	@cd $(BUILD_DIR) && cmake .. -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
+# Автоопределение числа ядер (Linux/Mac)
+NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+
 #Сборка проекта
 build:
-	@cd $(BUILD_DIR) && cmake --build . --config $(CONFIG)
+	@cd $(BUILD_DIR) && cmake --build . --config $(CONFIG) -j $(NPROC)
 
 # Запуск
 server:
@@ -45,17 +48,19 @@ test:
 		echo "Тесты не найдены! Соберите с BUILD_TESTS=ON"; \
 		exit 1; \
 	fi
-	@./$(BUILD_DIR)/bin/test_config && \
-		./$(BUILD_DIR)/bin/test_logger && \
-		./$(BUILD_DIR)/bin/test_database && \
-		./$(BUILD_DIR)/bin/test_database_cdr_writer && \
-		./$(BUILD_DIR)/bin/test_session_manager && \
-		./$(BUILD_DIR)/bin/test_udp_server && \
-		./$(BUILD_DIR)/bin/test_tcp_serializer && \
-		./$(BUILD_DIR)/bin/test_tcp_handler && \
-		./$(BUILD_DIR)/bin/test_tcp_server && \
-		./$(BUILD_DIR)/bin/test_integration_udp && \
-		./$(BUILD_DIR)/bin/test_integration_tcp
+	@cd $(BUILD_DIR) && ctest
+# 	-j $(NPROC) --output-on-failure
+# 	@./$(BUILD_DIR)/bin/test_config && \
+# 		./$(BUILD_DIR)/bin/test_logger && \
+# 		./$(BUILD_DIR)/bin/test_database && \
+# 		./$(BUILD_DIR)/bin/test_database_cdr_writer && \
+# 		./$(BUILD_DIR)/bin/test_session_manager && \
+# 		./$(BUILD_DIR)/bin/test_udp_server && \
+# 		./$(BUILD_DIR)/bin/test_tcp_serializer && \
+# 		./$(BUILD_DIR)/bin/test_tcp_handler && \
+# 		./$(BUILD_DIR)/bin/test_tcp_server && \
+# 		./$(BUILD_DIR)/bin/test_integration_udp && \
+# 		./$(BUILD_DIR)/bin/test_integration_tcp
 
 # Очистить сборку
 clean:
