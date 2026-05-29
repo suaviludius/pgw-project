@@ -42,6 +42,10 @@ add_executable(
     test_integration_tcp
     integration/test_integration_tcp.cpp
 )
+add_executable(
+    test_load_udp
+    load/test_load_udp.cpp
+)
 
 # Добавляем файлы, которые будем тестировать
 target_sources(
@@ -117,6 +121,23 @@ target_sources(
     ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
     ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
 )
+target_sources(
+    test_load_udp PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Config.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/FileCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/DatabaseCdrWriter.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/CdrWriterFactory.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/SessionManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/HttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/common/TcpSerializer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/TcpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/UdpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pgw/server/Server.cpp
+)
+
 
 # Подключаем заголовочные файлы
 target_include_directories(
@@ -193,6 +214,14 @@ target_include_directories(
 target_include_directories(
     test_integration_tcp PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
+    ${CMAKE_SOURCE_DIR}/include/pgw/server
+    ${CMAKE_SOURCE_DIR}/src/pgw/common
+    ${CMAKE_SOURCE_DIR}/src/pgw/server
+)
+target_include_directories(
+    test_load_udp PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/pgw/common
     ${CMAKE_SOURCE_DIR}/include/pgw/server/interfaces
     ${CMAKE_SOURCE_DIR}/include/pgw/server
     ${CMAKE_SOURCE_DIR}/src/pgw/common
@@ -284,6 +313,15 @@ target_link_libraries(
     GTest::gtest
     GTest::gtest_main   # Если не добавить, то Cmake будет пытаться создать main()
     GTest::gmock        # Для mock
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    httplib::httplib
+)
+target_link_libraries(
+    test_load_udp PRIVATE
+    pgw_common
+    GTest::gtest
+    GTest::gtest_main
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     httplib::httplib

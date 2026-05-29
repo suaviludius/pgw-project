@@ -71,20 +71,17 @@ public:
     // Выполняет два метода: acceptNewClient() и handleClientData(fd)
     void processEvent();
 
-    // Подключение новых клиентов
-    void acceptNewClient();
+    // Подключение новых клиентов, возвращает фаловый дискриптор
+    int acceptNewClient();
 
-    // Обработка данных клиента
-    void handleClientData(int fd);
+    // Обработка данных клиента, возвращает статус соединения 1 - активно, 0 - закрыто
+    bool handleClientData(int fd);
 
     // Проверяет, запущен ли сервер
     bool isRunning() const {return m_running;}
 
     // Возвращает файловый дескриптор сокета сервера для использования с poll/epoll
     int getFd() const {return m_socket->getFd();}
-
-    // Возвращает файловые дескрипторы сокетов клиентов для использования с poll/epoll
-    std::vector<int> getClientsFds() const;
 
     size_t getClientsCount() { return m_clients.size();}
 

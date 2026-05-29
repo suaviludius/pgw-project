@@ -58,7 +58,8 @@ void FileCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view a
                 << action << ", "
                 << std::asctime(std::localtime(&time)); // Преобразует структуру локального врмени в строку
 
-    m_writeFile.flush();
+    // будем флушить в getRecentRecords()
+    //m_writeFile.flush();
 
     // Обновляем позиции
     m_index.push_back(pos);
@@ -69,6 +70,12 @@ void FileCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view a
 
 std::vector<CdrRecord> FileCdrWriter::getRecentRecords(size_t limit) {
     std::vector<CdrRecord> records;
+
+    // если буфер пуст, flush сделает пару сравнений и всё !
+    // TODO: если делать HMI, то для скорости нужно сделать флаг записи с последнего flush
+    if (m_writeFile.is_open()) {
+        m_writeFile.flush();
+    }
 
     if (!m_readFile.is_open()) {
         LOG_WARN("Cannot open CDR file for reading: {}", m_filename);

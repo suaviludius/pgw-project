@@ -128,7 +128,13 @@ void HttpServer::setRoutes() {
     // Если запрос не соответсвтует задачам выше
     m_server->set_error_handler([](const httplib::Request&, httplib::Response& res) {
         res.set_content("Not Found", "text/plain");
-        res.status = static_cast<int>(Status::NOT_FOUND); // Not found
+        res.status = static_cast<int>(Status::NOT_FOUND);
+    });
+
+    // Для нагрузочных тетсов будем вызывать его
+    m_server->Get("/health", [](const httplib::Request&, httplib::Response& res){
+        res.set_content("OK", "text/plain");
+        res.status = static_cast<int>(Status::OK);
     });
 }
 
