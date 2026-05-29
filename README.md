@@ -74,6 +74,7 @@ rm -rf build                                                        # Очист
 |-------|----------|----------|
 | `GET` | `/check_subscriber?imsi= ...` | Проверка статуса сессии: `active`/`not active` |
 | `POST` | `/stop` |  Инициирование graceful shutdown |
+| `GET` | `/health` |  проверка активности сервера |
 
 ```bash
 curl "http://localhost:8080/check_subscriber?imsi=001010123456789"
