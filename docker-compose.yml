@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     healthcheck:
       # Здесь мы просто отправляем тетсовую команду серверу, чтобы проверить запустился ли он
-      test: ["CMD", "curl", "-f", "http://localhost:8080/check_subscriber?imsi=001010123456789"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
