@@ -40,6 +40,8 @@ TEST_F(DatabaseCdrWriterTest, WriteAndReadRecords) {
     cdrWriter->writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED);
     cdrWriter->writeAction(IMSI2, pgw::ICdrWriter::SESSION_REJECTED);
 
+    cdrWriter->flush();
+
     auto records = cdrWriter->getRecentRecords(10);
     ASSERT_EQ(records.size(), 2);
     EXPECT_EQ(records[0].imsi, IMSI2);   // последняя запись
@@ -53,6 +55,8 @@ TEST_F(DatabaseCdrWriterTest, GetRecentRecordsLimit) {
         cdrWriter->writeAction(IMSI1, pgw::ICdrWriter::SESSION_CREATED);
     }
 
+    cdrWriter->flush();
+
     auto records = cdrWriter->getRecentRecords(cdrCount);
     EXPECT_LE(records.size(), pgw::ICdrWriter::READ_CDR_LIMIT);
 }
@@ -62,6 +66,8 @@ TEST_F(DatabaseCdrWriterTest, RecordCount) {
     cdrWriter->writeAction(IMSI2, pgw::ICdrWriter::SESSION_CREATED);
     cdrWriter->writeAction(IMSI3, pgw::ICdrWriter::SESSION_CREATED);
 
+    cdrWriter->flush();
+
     auto count = cdrWriter->getRecordCount();
     ASSERT_TRUE(count.has_value());
     EXPECT_EQ(*count, 3);
@@ -69,6 +75,8 @@ TEST_F(DatabaseCdrWriterTest, RecordCount) {
 
 TEST_F(DatabaseCdrWriterTest, RecordFields) {
     cdrWriter->writeAction(IMSI1, pgw::ICdrWriter::SESSION_ERROR);
+
+    cdrWriter->flush();
 
     auto records = cdrWriter->getRecentRecords(1);
     ASSERT_EQ(records.size(), 1);
