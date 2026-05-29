@@ -2,6 +2,8 @@
 
 #include "pgw/common/logger.h"
 
+#include <stdexcept>
+
 
 namespace pgw {
 
@@ -21,37 +23,130 @@ constexpr const char* SQL_SCHEMA_CREATE = R"(
 constexpr const char* SQL_WRITE_CDR = "INSERT INTO cdr_records (imsi, action) VALUES (?, ?)";
 constexpr const char* SQL_RECENT_CDR = "SELECT imsi, action, timestamp FROM cdr_records ORDER BY timestamp DESC LIMIT ?";
 constexpr const char* SQL_COUNT = "SELECT COUNT(*) FROM cdr_records";
+constexpr const char* SQL_BEGIN_IMMEDIATE = "BEGIN IMMEDIATE";
+constexpr const char* SQL_ROLLBACK = "ROLLBACK";
+constexpr const char* SQL_COMMIT = "COMMIT";
 
-DatabaseCdrWriter::DatabaseCdrWriter(std::shared_ptr<pgw::DatabaseManager> db)
+
+DatabaseCdrWriter::DatabaseCdrWriter(std::shared_ptr<DatabaseManager> db)
     : m_db(std::move(db)){
-    createTable();
-    LOG_INFO("Database CDR writer initialized");
+    if (!m_db || !m_db->isConnected()){
+        throw std::runtime_error("Failed connect database for CDR writer");
+    }
+    if (!createTable()) {
+        throw std::runtime_error("Failed to create CDR table");
+    }
+    m_thread = std::thread(&DatabaseCdrWriter::flushLoop, this);
+    LOG_INFO("Database CDR writer started (batch={}, interval={}s)", BATCH_SIZE, FLUSH_INTERVAL.count());
 }
 
 DatabaseCdrWriter::~DatabaseCdrWriter(){
+    m_stop = true;
+    m_cv.notify_one();
+    if (m_thread.joinable()){
+        m_thread.join();
+    }
+    flush();  // последний сброс
     LOG_INFO("Database CDR writer deleted");
 }
 
 bool DatabaseCdrWriter::createTable() {
-    if (!m_db || !m_db->isConnected()) return false;
     return m_db->execute(SQL_SCHEMA_CREATE);
 }
 
 void DatabaseCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_view action){
-    if (!m_db || !m_db->isConnected()) return;
+    if (!m_db || !m_db->isConnected()) {
+        LOG_WARN("Database not connected, cannot write CDR");
+        return;
+    }
 
-    auto stmt = m_db->prepareStatement(SQL_WRITE_CDR);
-    if (!stmt) return;
+    { // Добавляем запись в буфер (с защитой от гонки данных)
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_buffer.push({std::string(imsi), std::string(action)});
+        // Если буфер переполнился -будим поток для немедленного сброса
+        if (m_buffer.size() >= BATCH_SIZE)
+            m_cv.notify_one();
+    }
 
-    sqlite3_bind_text(stmt, 1, imsi.data(), static_cast<int>(imsi.size()), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, action.data(), static_cast<int>(action.size()), SQLITE_STATIC);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    LOG_DEBUG("CDR buffered: {} - {} (buffer size: {})", imsi, action, m_buffer.size());
 }
 
+void DatabaseCdrWriter::flush(){
+    std::queue<CdrEntry> toFlush;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_buffer.empty()) return;
+        // Меняемся указателями O(1): m_buffer <-> toFlush
+        toFlush.swap(m_buffer);
+    }
+
+    // Начало транзакции (блокирует для записи)
+    if (!m_db->execute(SQL_BEGIN_IMMEDIATE)) {
+        LOG_ERROR("Failed to begin transaction");
+        return;
+    }
+
+    // Подготовка statement для вставки
+    auto stmt = m_db->prepareStatement(SQL_WRITE_CDR);
+    if (!stmt) {
+        m_db->execute(SQL_ROLLBACK);
+        LOG_ERROR("Failed to prepare statement");
+        return;
+    }
+
+    // Вставка всех записей из буфера
+    size_t inserted = 0;
+    while (!toFlush.empty()) {
+        const auto& entry = toFlush.front();
+
+        sqlite3_bind_text(stmt, 1, entry.imsi.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, entry.action.c_str(), -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            sqlite3_reset(stmt);
+            m_db->execute(SQL_ROLLBACK);
+            LOG_ERROR("Failed to insert CDR record");
+            return;
+        }
+
+        sqlite3_reset(stmt);
+        toFlush.pop();
+        ++inserted;
+    }
+
+    // Окончание транзакции
+    if (!m_db->execute(SQL_COMMIT)) {
+        LOG_ERROR("Failed to commit transaction");
+        return;
+    }
+
+    LOG_INFO("Flushed {} CDR records", inserted);
+
+}
+
+void DatabaseCdrWriter::flushLoop(){
+    while (!m_stop) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        // Ждём: stop или буфер не пуст или разбудимся по таймауту
+        m_cv.wait_for(lock, FLUSH_INTERVAL, [this] {
+            return m_stop || m_buffer.size() >= BATCH_SIZE;
+        });
+        lock.unlock();
+
+        if (m_stop) break;
+
+        flush();
+    }
+}
+
+// TODO: сделать буффер для хранения limit записей что считываются из БД с каким-то интервалом,
+// это уменьшит обращения к БД (обновлять буффер по таймеру в другом потоке)
 std::vector<CdrRecord> DatabaseCdrWriter::getRecentRecords(size_t limit) {
     std::vector<CdrRecord> result;
     if (!m_db || !m_db->isConnected()) return result;
+
+    // Flush буфера перед чтением (думаю для HMI это не обязательно)
+    // flush();
 
     auto stmt = m_db->prepareStatement(SQL_RECENT_CDR);
     if (!stmt) return result;
@@ -74,6 +169,9 @@ std::vector<CdrRecord> DatabaseCdrWriter::getRecentRecords(size_t limit) {
 
 std::optional<int> DatabaseCdrWriter::getRecordCount() {
     if (!m_db || !m_db->isConnected()) return std::nullopt;
+
+    // Flush буфера перед чтением (думаю для HMI это не обязательно)
+    // flush();
 
     auto val = m_db->queryValue(SQL_COUNT);
 
