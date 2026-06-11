@@ -21,6 +21,8 @@ namespace logger {
 inline constexpr size_t FILE_SIZE {10 * 1024 * 1024};
 inline constexpr size_t FILES_COUNT {3};
 inline constexpr const char* PATTERN {"[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v"};
+inline constexpr size_t QUEUE_SIZE = 8192;
+inline constexpr int FLUSH_TIMEOUT= 5;
 
 using level = spdlog::level::level_enum;
 

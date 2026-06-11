@@ -1,5 +1,6 @@
 #include "pgw/common/logger.h"
 
+#include <spdlog/async.h>
 #include <spdlog/sinks/rotating_file_sink.h> // Для записи логов в файл
 #include <spdlog/sinks/stdout_color_sinks.h> // Для цветного вывода логов в консоль
 
@@ -16,13 +17,23 @@ void logger::init(std::string_view logLevel){
         return;
     }
     try{
+        // очередь на QUEUE_SIZE сообщений, 1 поток
+        spdlog::init_thread_pool(QUEUE_SIZE, 1);
+
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
         // Создаем логгер
-        g_logger = std::make_shared<spdlog::logger>("pgw");
-        g_logger->sinks().push_back(console_sink);
+        g_logger = std::make_shared<spdlog::async_logger>(
+            "pgw",
+            console_sink,
+            spdlog::thread_pool(),
+            spdlog::async_overflow_policy::block
+        );
+        //g_logger->sinks().push_back(console_sink);
         g_logger->set_level(parse_level(logLevel));
         g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
+
+        g_logger->flush_on(spdlog::level::warn);
 
         // Регистрируем как логгер по умолчанию
         spdlog::register_logger(g_logger);
@@ -46,6 +57,12 @@ void logger::addFileSink(const std::string& logFile) {
         false           // Не ротировать при открытии
     );
     file_sink->set_pattern(PATTERN);
+
+    // Отключаем автоматический flush (слишком частые системные вызовы)
+    g_logger->flush_on(spdlog::level::off);
+
+    // Фоновый поток будет сбрасывать логгеры каждые FLUSH_TIMEOUT секунд
+    spdlog::flush_every(std::chrono::seconds(FLUSH_TIMEOUT));
 
     g_logger->sinks().push_back(file_sink);
 
