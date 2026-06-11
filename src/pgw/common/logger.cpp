@@ -8,10 +8,10 @@
 
 namespace pgw {
 
-std::shared_ptr<spdlog::logger> logPtr = nullptr;
+std::shared_ptr<spdlog::logger> g_logger = nullptr;
 
 void logger::init(std::string_view logLevel){
-    if (logPtr) { // Уже инициализирован
+    if (g_logger) { // Уже инициализирован
         LOG_WARN("Logger already initialised");
         return;
     }
@@ -19,14 +19,14 @@ void logger::init(std::string_view logLevel){
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
         // Создаем логгер
-        logPtr = std::make_shared<spdlog::logger>("pgw");
-        logPtr->sinks().push_back(console_sink);
-        logPtr->set_level(parse_level(logLevel));
-        logPtr->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
+        g_logger = std::make_shared<spdlog::logger>("pgw");
+        g_logger->sinks().push_back(console_sink);
+        g_logger->set_level(parse_level(logLevel));
+        g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%n] %v");
 
         // Регистрируем как логгер по умолчанию
-        spdlog::register_logger(logPtr);
-        spdlog::set_default_logger(logPtr);
+        spdlog::register_logger(g_logger);
+        spdlog::set_default_logger(g_logger);
 
         LOG_INFO("Logger initialized successfully with level: {}", logLevel);
     }
@@ -47,7 +47,7 @@ void logger::addFileSink(const std::string& logFile) {
     );
     file_sink->set_pattern(PATTERN);
 
-    logPtr->sinks().push_back(file_sink);
+    g_logger->sinks().push_back(file_sink);
 
     // Логируем факт добавления (через сам логгер)
     LOG_INFO("File sink added: {}", logFile);
@@ -73,22 +73,22 @@ logger::level logger::parse_level(std::string_view level) {
 }
 
 void logger::shutdown(){
-    if(logPtr){
-        logPtr->flush(); // Принудительный сброс логов на диск
-        spdlog::drop(logPtr->name()); // Удаляем логгер из списка
-        logPtr.reset();
+    if(g_logger){
+        g_logger->flush(); // Принудительный сброс логов на диск
+        spdlog::drop(g_logger->name()); // Удаляем логгер из списка
+        g_logger.reset();
     } else {
         LOG_WARN("Cannot set level: logger not initialized");
     }
 }
 
 bool logger::isInit() {
-    return logPtr != nullptr;
+    return g_logger != nullptr;
 }
 
 void logger::set_level(spdlog::level::level_enum level) {
-    if (logPtr) {
-        logPtr->set_level(level);
+    if (g_logger) {
+        g_logger->set_level(level);
         LOG_INFO("Log level changed to: {}", spdlog::level::to_string_view(level));
     } else {
         LOG_WARN("Cannot set level: logger not initialized");
