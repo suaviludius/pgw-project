@@ -29,9 +29,12 @@ bool DatabaseManager::initialize() {
         return false;
     }
 
-    // Включаем WAL для производительности
-    // (если для целостности данных нужно написать одну строку, то газ!)
-    execute("PRAGMA journal_mode=WAL;");
+    // Улучшаем производительность
+    // (если для усорения нужна пара строк, то газ! - усорение ~ 3x)
+    execute("PRAGMA journal_mode=WAL;");           // Пишем в отдельные файлы перед БД
+    execute("PRAGMA synchronous=NORMAL;");         // Быстрее, чем OFF (если ОС вылетит, то данные минус)
+    execute("PRAGMA mmap_size=268435456;");        // 256MB mmap выделяем виртуальную память для БД (меньше системных вызовов)
+    execute("PRAGMA cache_size=10000;");           // 10MB кэш ускорит чтение
     return true;
 }
 
