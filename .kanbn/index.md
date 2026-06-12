@@ -21,8 +21,8 @@ completedColumns:
 ## In Progress
 
 - [test-integration-тесты](tasks/test-integration-тесты.md)
-- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
 - [test-unit-тесты](tasks/test-unit-тесты.md)
+- [perf-Провести-профилирование-исправить-узкие-места](tasks/perf-Провести-профилирование-исправить-узкие-места.md)
 
 ## Done
 
@@ -30,4 +30,5 @@ completedColumns:
 - [feat-Сборщик-статистики](tasks/feat-Сборщик-статистики.md)
 - [fix-dependency-inversion-для-tcp-handler-cdr-writer-database-manager](tasks/fix-dependency-inversion-для-tcp-handler-cdr-writer-database-manager.md)
 - [refactor-Редактирование-программы-в-соответсвии-с-принципами-solid](tasks/refactor-Редактирование-программы-в-соответсвии-с-принципами-solid.md)
+- [feat-tcp-протокол-управления](tasks/feat-tcp-протокол-управления.md)
 - [refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include](tasks/refactor-Отредактировать-структуру-проекта-в-дирректориях-src-и-include.md)
