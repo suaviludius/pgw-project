@@ -36,6 +36,12 @@ DatabaseCdrWriter::DatabaseCdrWriter(std::shared_ptr<DatabaseManager> db)
     if (!createTable()) {
         throw std::runtime_error("Failed to create CDR table");
     }
+    m_statements[SQL_WRITE_CDR] = m_db->prepareStatement(SQL_WRITE_CDR);
+    m_statements[SQL_RECENT_CDR] = m_db->prepareStatement(SQL_RECENT_CDR);
+    if (m_statements[SQL_WRITE_CDR] == nullptr || m_statements[SQL_RECENT_CDR] == nullptr) {
+        throw std::runtime_error("Failed to prepare statements");
+    }
+
     m_thread = std::thread(&DatabaseCdrWriter::flushLoop, this);
     LOG_INFO("Database CDR writer started (batch={}, interval={}s)", BATCH_SIZE, FLUSH_INTERVAL.count());
 }
@@ -83,14 +89,9 @@ void DatabaseCdrWriter::flush(){
     // Начало транзакции (блокирует для записи)
     if (!m_db->execute(SQL_BEGIN_IMMEDIATE)) {
         LOG_ERROR("Failed to begin transaction");
-        return;
-    }
-
-    // Подготовка statement для вставки
-    auto stmt = m_db->prepareStatement(SQL_WRITE_CDR);
-    if (!stmt) {
-        m_db->execute(SQL_ROLLBACK);
-        LOG_ERROR("Failed to prepare statement");
+        // Возвращаем записи в буффер
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!toFlush.empty()) toFlush.swap(m_buffer);
         return;
     }
 
@@ -98,18 +99,29 @@ void DatabaseCdrWriter::flush(){
     size_t inserted = 0;
     while (!toFlush.empty()) {
         const auto& entry = toFlush.front();
+        const auto& stmt = m_statements[SQL_WRITE_CDR];
 
         sqlite3_bind_text(stmt, 1, entry.imsi.c_str(), -1, SQLITE_STATIC);
         sqlite3_bind_text(stmt, 2, entry.action.c_str(), -1, SQLITE_STATIC);
 
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
-            sqlite3_reset(stmt);
+        int rc = sqlite3_step(stmt);
+
+        // Сбрасываем ДЛЯ СЛЕДУЮЩЕЙ ЗАПИСИ
+        sqlite3_reset(stmt);
+        sqlite3_clear_bindings(stmt);
+
+        if (rc != SQLITE_DONE) {
             m_db->execute(SQL_ROLLBACK);
             LOG_ERROR("Failed to insert CDR record");
+            // Возвращаем оставшиеся записи
+            std::lock_guard<std::mutex> lock(m_mutex);
+            while (!toFlush.empty()) {
+                m_buffer.push(toFlush.front());
+                toFlush.pop();
+            }
             return;
         }
 
-        sqlite3_reset(stmt);
         toFlush.pop();
         ++inserted;
     }
@@ -120,7 +132,7 @@ void DatabaseCdrWriter::flush(){
         return;
     }
 
-    LOG_INFO("Flushed {} CDR records", inserted);
+    LOG_DEBUG("Flushed {} CDR records", inserted);
 
 }
 

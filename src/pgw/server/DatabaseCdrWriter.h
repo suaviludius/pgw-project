@@ -12,6 +12,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <unordered_map>
 
 // Класс для записи CDR (Call Detail Records) в SQLite базу данных
 // Использует batch-вставку с транзакциями и фоновый поток для flush
@@ -30,7 +31,10 @@ class DatabaseCdrWriter : public ICdrWriter {
     static constexpr size_t BATCH_SIZE = 100;
 
     // Период выполнения flush в database
-    static constexpr auto FLUSH_INTERVAL = std::chrono::seconds(1);
+    static constexpr auto FLUSH_INTERVAL = std::chrono::seconds(3);
+
+    // Кэш подготовленных запросов
+    std::unordered_map<std::string, sqlite3_stmt*> m_statements;
 
     // Очередь CDR записей
     std::queue<CdrEntry> m_buffer;
