@@ -12,6 +12,7 @@
 #include "HttpServer.h"
 
 #include <sys/epoll.h>
+#include <sys/timerfd.h>
 #include <chrono>
 #include <iostream>
 #include <cerrno>
@@ -52,9 +53,6 @@ struct Server::Impl {
 
     // Основной цикл обработки событий
     void runEventLoop();
-
-    // Graceful shutdown
-    void shutdown();
 
     // Конструктор принимает configPath
     explicit Impl(const std::string& configPath)
@@ -105,15 +103,12 @@ int Server::run() {
             return 1;
         }
 
-        LOG_INFO("Server started successfully");
+        LOG_INFO("Main server started successfully");
 
         // Запуск основного цикла обработки событий
         pImpl->runEventLoop();
 
-        // Graceful shutdown
-        pImpl->shutdown();
-
-        LOG_INFO("Server stopped gracefully");
+        LOG_INFO("Main server stopped gracefully");
         return 0;
     }
     catch (const std::exception& e) {
@@ -227,6 +222,16 @@ bool Server::Impl::initializeServers() {
 }
 
 void Server::Impl::runEventLoop() {
+
+    // Состояния, в которых может находиться цикл
+    enum class State {
+        RUNNING,    // Нормальная работа
+        DRAINING,   // Завершаем сессии
+        STOPPING,   // Останавливаем серверы
+        STOPPED     // Полностью остановлен
+    };
+    State state = State::RUNNING;
+
     // Создаём epoll-дескриптор
     int epollFd = epoll_create1(0);
 
@@ -245,6 +250,10 @@ void Server::Impl::runEventLoop() {
         }
     };
 
+    // Таймер для shutdown
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    //addToEpoll(timerFd, EPOLLIN);
+
     // Серверный UDP сокет
     if (m_udpServer && m_udpServer->isRunning()){
         addToEpoll(m_udpServer->getFd(), EPOLLIN);
@@ -262,82 +271,110 @@ void Server::Impl::runEventLoop() {
     // Таймер для периодической очистки просроченных сессий
     auto lastCleanup = std::chrono::steady_clock::now();
 
+    // Таймер для выполнения shutdown
+    auto shutdownInterval = 1000 /(m_sessionManager->getShutdownRate());
+    struct itimerspec timerSpec;
+    timerSpec.it_value.tv_sec = 0;
+    timerSpec.it_value.tv_nsec = shutdownInterval * 1000000;  // 10ms
+    timerSpec.it_interval.tv_sec = 0;
+    timerSpec.it_interval.tv_nsec = shutdownInterval * 1000000;  // Периодический
+
     // Основной цикл обработки событий
-    while (!m_shutdownRequest.load(std::memory_order_acquire)) {
-        // Ожидание событий на всех сокетах с таймаутом, вернет количество сигналов
-        int nfds = epoll_wait(epollFd, events, MAX_FDS, POLL_TIMEOUT_MS);
+    while (state != State::STOPPED) {
 
-        if (nfds == -1) {
-            if (errno == EINTR) continue; // Прервано сигналом, продолжаем
-            LOG_ERROR("Epoll error: {}", strerror(errno));
-            break;
+        // Настройки при shutdown request
+        if(state == State::RUNNING && m_shutdownRequest.load(std::memory_order_acquire)){
+            LOG_INFO("Starting graceful shutdown");
+            m_sessionManager->startDraining();
+            if (m_tcpServer) m_tcpServer->stopAccepting();
+
+            // Запускаем таймер
+            timerfd_settime(timerFd, 0, &timerSpec, nullptr);
+            // Теперь в epoll() будет обрабатываться shutdown таймер
+            addToEpoll(timerFd, EPOLLIN);
+            state = State::DRAINING;
         }
 
-        // Получаем количество сокетов, что хотят разговаривать
-        for (int i = 0; i < nfds; ++i) {
-            int fd = events[i].data.fd;
-            uint32_t ev = events[i].events;
+        if(state == State::STOPPING){
+            LOG_DEBUG("Servers stopping");
+            if (m_udpServer) m_udpServer->stop();
+            if (m_tcpServer) m_tcpServer->stop();
+            if (m_httpServer) m_httpServer->stop();
+            LOG_DEBUG("Servers stopped");
+            state = State::STOPPED;
+        }
 
-            // Определяем, что это за сокет (по fd)
-            // Серверный UDP соккет ???
-            if (m_udpServer && fd == m_udpServer->getFd()) {
-                if (ev & EPOLLIN) m_udpServer->processEvent();
+        if(state != State::STOPPED){
+            // Ожидание событий на всех сокетах с таймаутом, вернет количество сигналов
+            int nfds = epoll_wait(epollFd, events, MAX_FDS, POLL_TIMEOUT_MS);
+
+            if (nfds == -1) {
+                if (errno == EINTR) continue; // Прервано сигналом, продолжаем
+                LOG_ERROR("Epoll error: {}", strerror(errno));
+                break;
             }
-            // Серверный TCP соккет ???
-            else if (m_tcpServer && fd == m_tcpServer->getFd()) {
-                if (ev & EPOLLIN) {
-                    int clientFd = m_tcpServer->acceptNewClient();
-                    if (clientFd != -1) {
-                        // Добавить клиентский сокет в epoll
-                        addToEpoll(clientFd, EPOLLIN | EPOLLRDHUP);
+
+            // Получаем количество сокетов, что хотят разговаривать
+            for (int i = 0; i < nfds; ++i) {
+                int fd = events[i].data.fd;
+                uint32_t ev = events[i].events;
+
+                // Определяем, что это за сокет (по fd)
+                if (state == State::DRAINING && m_sessionManager && fd == timerFd) {
+                    if (ev & EPOLLIN) {
+                        // Считываем сколько раз сработал shutdown таймер
+                        uint64_t expirations;
+                        ssize_t s = read(timerFd, &expirations, sizeof(uint64_t));
+
+                        // Удаляем по количеству сессий, накопившихся в таймере
+                        for (uint64_t i = 0; i < expirations; ++i) {
+                            if(!(m_sessionManager->shutdownSession())) {
+                                LOG_INFO("All sessions terminated");
+                                state = State::STOPPING;
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Серверный UDP соккет ???
+                else if (m_udpServer && fd == m_udpServer->getFd()) {
+                    if (ev & EPOLLIN) m_udpServer->processEvent();
+                }
+                // Серверный TCP соккет ???
+                else if (m_tcpServer && fd == m_tcpServer->getFd()) {
+                    if (ev & EPOLLIN) {
+                        int clientFd = m_tcpServer->acceptNewClient();
+                        if (clientFd != -1) {
+                            // Добавить клиентский сокет в epoll
+                            addToEpoll(clientFd, EPOLLIN | EPOLLRDHUP);
+                        }
+                    }
+                }
+                // Клиентский TCP соккет !!!
+                else {
+                    if (ev & (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+                        if (!m_tcpServer->handleClientData(fd)) {
+                            // Если соединение закрыто, удаляем из epoll
+                            epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
+                        }
                     }
                 }
             }
-            // Клиентский TCP соккет !!!
-            else {
-                if (ev & (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
-                    if (!m_tcpServer->handleClientData(fd)) {
-                        // Если соединение закрыто, удаляем из epoll
-                        epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
-                    }
-                }
+
+            // Таймаут, переходим к периодическим задачам
+            auto now = std::chrono::steady_clock::now();
+
+            // Очистка просроченных сессий
+            if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S / 3)) {
+                m_sessionManager->cleanTimeoutSessions();
+                lastCleanup = now;
             }
-        }
-
-        // Таймаут, переходим к периодическим задачам
-        auto now = std::chrono::steady_clock::now();
-
-        // Очистка просроченных сессий
-        if (now - lastCleanup > std::chrono::seconds(SESSION_CLEANUP_INTERVAL_S)) {
-            m_sessionManager->cleanTimeoutSessions();
-            lastCleanup = now;
         }
     }
 
     close(epollFd);
 }
 
-void Server::Impl::shutdown() {
-    LOG_INFO("Starting graceful shutdown...");
-
-    // Завершение всех сессий с контролируемой скоростью
-    if (m_sessionManager) {
-        m_sessionManager->gracefulShutdown();
-    }
-
-    // Остановка серверов
-    if (m_httpServer) {
-        m_httpServer->stop();
-    }
-    if (m_udpServer) {
-        m_udpServer->stop();
-    }
-    if (m_tcpServer) {
-        m_tcpServer->stop();
-    }
-
-    LOG_INFO("Graceful shutdown completed");
-}
 
 ISessionManager& Server::getSessionManager() {
     return *pImpl->m_sessionManager;

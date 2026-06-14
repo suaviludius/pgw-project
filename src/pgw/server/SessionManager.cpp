@@ -17,6 +17,7 @@ SessionManager::SessionManager(
       m_blacklist{blacklist},
       m_sessionTimeoutSec{timeout},
       m_shutdownRate{rate},
+      m_draining{false},
       m_startTime{std::chrono::steady_clock::now()}{
     LOG_INFO("Session Manager initialized");
 }
@@ -41,6 +42,8 @@ bool SessionManager::hasSession(const pgw::types::imsi_t& imsi) const {
 }
 
 SessionManager::CreateResult SessionManager::createSession(const pgw::types::imsi_t& imsi){
+    if(m_draining) return CreateResult::SERVICE_UNAVAILABLE;
+
     if(m_blacklist.find(imsi) != m_blacklist.end()){
         m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_REJECTED);
         m_stats.rejectedSessions++;
@@ -83,17 +86,36 @@ SessionManager::CreateResult SessionManager::createSession(const pgw::types::ims
     }
 }
 
+void SessionManager::deleteSession(const ISessionManager::sessions::iterator& it){
+    auto imsi = it->first;
+    m_sessions.erase(it);
+    m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+    m_stats.activeSessions = m_sessions.size();
+    LOG_DEBUG("Session delete for imsi: {}", imsi);
+}
+
+bool SessionManager::shutdownSession(){
+    if(m_sessions.empty()) {
+        LOG_DEBUG("Sessions not found");
+        return false;
+    }
+
+    auto it = m_sessions.begin();
+
+    // Удаляем сессию, если есть что удалять
+    deleteSession(it);
+    m_stats.terminateSessions++;
+    return true;
+}
+
 bool SessionManager::terminateSession(const pgw::types::imsi_t& imsi){
     // Ищем сессию в мапе
     auto it = m_sessions.find(imsi);
 
     // Удаляем сессию, если итератор на сессию находится в пределах контейнера
     if (it != m_sessions.end()){
-        m_sessions.erase(it);
-        m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+        deleteSession(it);
         m_stats.terminateSessions++;
-        m_stats.activeSessions = m_sessions.size();
-        LOG_INFO("Session deleted for imsi: {}",imsi);
         return true;
     } else {
         LOG_DEBUG("Session not found for removal IMSI: {}" , imsi);
@@ -111,12 +133,9 @@ void SessionManager::cleanTimeoutSessions(){
         auto age = now - it->second.createdTime;
 
         if (age >= m_sessionTimeoutSec) {
-            auto imsi = it->first;      // Сохраняем IMSI перед удалением;   // erase делает текущий it невалидным, поэтому сохраняем
-            it = m_sessions.erase(it);  // erase возвращает следующий валидный итератор
-            m_cdrWriter.writeAction(imsi, ICdrWriter::SESSION_DELETED);
+            auto prev = it++;
+            deleteSession(prev);
             m_stats.expiredSessions++;
-            m_stats.activeSessions = m_sessions.size(); // Так немного дольше, зато надежнее
-            LOG_INFO("SESSION_DELETED imsi: {}",imsi);
         } else {
             ++it;
         }
@@ -127,33 +146,43 @@ void SessionManager::cleanTimeoutSessions(){
 void SessionManager::gracefulShutdown(){
     LOG_INFO("Sessions graceful shutdown start");
 
+    m_draining = true;
+
     // Рассчитываем интервал между удалениями сессий
     // Например, rate = 10 сессий/сек -> интервал = 1000ms/10 = 100ms на сессию
     const auto delayBetweenSessions = std::chrono::milliseconds(1000 / m_shutdownRate);
 
-    auto lastDeletionTime = std::chrono::steady_clock::now();
+    auto startDeletionTime = std::chrono::steady_clock::now();
+    auto lastDeletionTime = startDeletionTime;
 
-    auto it {m_sessions.begin()};
+    bool timeoutShutdown = false;
+    bool sessionsAvailable = true;
 
-    while (it != m_sessions.end()) {
-        auto imsi = it->first;  // Сохраняем IMSI перед удалением
+    while (sessionsAvailable) {
+        // Проверяем, что шатдаун выполняется меньше времени жизни сессии
+        if(!timeoutShutdown){
+            // Начало отсчета для создания задержки
+            auto now = std::chrono::steady_clock::now();
 
-        // Начало отсчета для создания задержки
-        auto now = std::chrono::steady_clock::now();
+            // Создаем задержку между удалениями сессий
+            auto timeSinceLastDeletion = now - lastDeletionTime;
 
-        // Создаем задержку между удалениями сессий
-        auto timeSinceLastDeletion = now - lastDeletionTime;
-
-        if (timeSinceLastDeletion < delayBetweenSessions) {
-            // Приводим временной интервал к нужному размеру
-            auto calculatedDelay = delayBetweenSessions - timeSinceLastDeletion;
-            std::this_thread::sleep_for(calculatedDelay);
-            lastDeletionTime = std::chrono::steady_clock::now();
+            if (timeSinceLastDeletion < delayBetweenSessions) {
+                // Приводим временной интервал к нужному размеру
+                auto calculatedDelay = delayBetweenSessions - timeSinceLastDeletion;
+                auto calculatedTimeout = startDeletionTime - now;
+                // Удаляем все сесиии, если shutdown выполняется дольше m_sessionTimeoutSec
+                if(calculatedTimeout > m_sessionTimeoutSec) {
+                    timeoutShutdown = true;
+                }else{
+                    std::this_thread::sleep_for(calculatedDelay);
+                    lastDeletionTime = std::chrono::steady_clock::now();
+                }
+            }
         }
 
-        it = std::next(it);
         // Удаляем сессию
-        terminateSession(imsi);
+        sessionsAvailable = shutdownSession();
 
         // TODO: До сих пор не знаю как поступить:
         // 1) сделать перегруженную фукнцию для терминейта

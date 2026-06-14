@@ -16,6 +16,7 @@ try : m_ip{ip},
       m_port{port},
       m_commandHandler{commandHandler},
       m_socket{SocketFactory::createTcp(true)},
+      m_stopAccepting{false},
       m_running{false}{
     LOG_INFO("TCP server initialized");
 }
@@ -125,6 +126,17 @@ void TcpServer::processEvent(){
 int TcpServer::acceptNewClient(){
     if(!m_running) {
         LOG_INFO("TCP server not running");
+        return -1;
+    }
+    if(m_stopAccepting){
+        LOG_INFO("TCP server stop accepting new clients");
+        auto clientSocket = m_socket->accept();
+        if (clientSocket.has_value() && clientSocket.value()) {
+            int clientFd = clientSocket.value()->getFd();
+            LOG_DEBUG("Rejecting new TCP connection: {}", clientFd);
+            // Закрываем сразу!
+            close(clientFd);
+        }
         return -1;
     }
 

@@ -31,11 +31,17 @@ private:
     // Скорость сессий/секунду для контролируемого удаления
     const pgw::types::rate_t m_shutdownRate;
 
+    // Сигнал установки режима shutdown (запрет на создание сессий)
+    bool m_draining;
+
     // Статистика по обработанным сессиям
     Statistics m_stats;
 
     // Начало работы менеджера сессий
     std::chrono::steady_clock::time_point m_startTime;
+
+    // Метод используемый другими методами, кто удаляет сессии
+    void deleteSession(const ISessionManager::sessions::iterator& it);
 
 public:
     explicit SessionManager(
@@ -65,6 +71,14 @@ public:
 
     // Завершение всех сессий с контролируемой скоростью
     void gracefulShutdown();
+
+    // Завершение одной случайной (первой в мапе) сессии
+    bool shutdownSession();
+
+    // Прекращение новых подключений
+    void startDraining() {m_draining = true;};
+
+    const pgw::types::rate_t getShutdownRate() {return m_shutdownRate;};
 };
 
 } // namespace pgw

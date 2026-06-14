@@ -34,6 +34,7 @@ private:
     pgw::types::port_t m_port;
 
     bool m_running;
+    bool m_stopAccepting;
 
     // Каждый клиент может читать и писать на своём сокете
     struct ClientContext{
@@ -84,6 +85,8 @@ public:
     int getFd() const {return m_socket->getFd();}
 
     size_t getClientsCount() { return m_clients.size();}
+
+    void stopAccepting() {m_stopAccepting = true;}
 
 private:
     // Удаление клиента
