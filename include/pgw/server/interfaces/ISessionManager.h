@@ -12,6 +12,7 @@ struct ISessionManager {
         CREATED,
         REJECTED_BLACKLIST,
         ALREADY_EXISTS,
+        SERVICE_UNAVAILABLE,
         ERROR
     };
 
