@@ -158,7 +158,7 @@ std::vector<CdrRecord> DatabaseCdrWriter::getRecentRecords(size_t limit) {
     if (!m_db || !m_db->isConnected()) return result;
 
     // Flush буфера перед чтением (думаю для HMI это не обязательно)
-    // flush();
+    flush();
 
     auto stmt = m_db->prepareStatement(SQL_RECENT_CDR);
     if (!stmt) return result;
