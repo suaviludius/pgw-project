@@ -52,7 +52,17 @@ DatabaseCdrWriter::~DatabaseCdrWriter(){
     if (m_thread.joinable()){
         m_thread.join();
     }
-    flush();  // последний сброс
+    // Последний сброс
+    flush();  
+
+    // Освобождаем prepared statements (без этого БД может не закрыть все соединения)
+    for (auto& [sql, stmt] : m_statements) {
+        if (stmt) {
+            sqlite3_finalize(stmt);
+        }
+    }
+    m_statements.clear();
+
     LOG_INFO("Database CDR writer deleted");
 }
 

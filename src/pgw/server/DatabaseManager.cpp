@@ -15,6 +15,9 @@ DatabaseManager::~DatabaseManager() {
 
 void DatabaseManager::cleanup() {
     if (m_db) {
+        // Выполняем чекпоинт WAL перед закрытием
+        sqlite3_wal_checkpoint_v2(m_db, nullptr, SQLITE_CHECKPOINT_TRUNCATE, nullptr, nullptr);
+
         sqlite3_close(m_db);
         m_db = nullptr;
     }
