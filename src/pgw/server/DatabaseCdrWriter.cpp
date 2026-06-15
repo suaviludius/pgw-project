@@ -82,9 +82,9 @@ void DatabaseCdrWriter::writeAction(pgw::types::constImsi_t imsi, std::string_vi
         // Если буфер переполнился -будим поток для немедленного сброса
         if (m_buffer.size() >= BATCH_SIZE)
             m_cv.notify_one();
+        LOG_DEBUG("CDR buffered: {} - {} (buffer size: {})", imsi, action, m_buffer.size());
     }
 
-    LOG_DEBUG("CDR buffered: {} - {} (buffer size: {})", imsi, action, m_buffer.size());
 }
 
 void DatabaseCdrWriter::flush(){

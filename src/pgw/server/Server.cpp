@@ -29,6 +29,14 @@ namespace server {
 
 // Определение структуры Impl – все поля и приватные методы класса
 struct Server::Impl {
+
+    struct SocketGuard {
+        int m_fd;
+        SocketGuard(int fd = -1) : m_fd{fd} {}
+        ~SocketGuard() { if (m_fd != -1) close(m_fd); }
+        operator int() const { return m_fd; }
+    };
+
     // Конфигурация приложения (создается один раз в конструкторе)
     std::unique_ptr<Config> m_config;
 
@@ -233,7 +241,7 @@ void Server::Impl::runEventLoop() {
     State state = State::RUNNING;
 
     // Создаём epoll-дескриптор
-    int epollFd = epoll_create1(0);
+    SocketGuard epollFd = epoll_create1(0);
 
     if (epollFd == -1) {
         LOG_CRITICAL("Epoll create failed: {}", strerror(errno));
@@ -251,7 +259,7 @@ void Server::Impl::runEventLoop() {
     };
 
     // Таймер для shutdown
-    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    SocketGuard timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     //addToEpoll(timerFd, EPOLLIN);
 
     // Серверный UDP сокет
@@ -371,8 +379,6 @@ void Server::Impl::runEventLoop() {
             }
         }
     }
-
-    close(epollFd);
 }
 
 

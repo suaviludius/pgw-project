@@ -28,6 +28,7 @@ bool DatabaseManager::initialize() {
     int rc = sqlite3_open(m_dbPath.c_str(), &m_db);
 
     if (rc != SQLITE_OK) {
+        sqlite3_close(m_db);
         m_db = nullptr;
         return false;
     }

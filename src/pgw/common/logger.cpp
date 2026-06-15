@@ -49,6 +49,11 @@ void logger::init(std::string_view logLevel){
 
 
 void logger::addFileSink(const std::string& logFile) {
+    if (!g_logger) { // Не инициализирован
+        LOG_WARN("Logger not initialised");
+        return;
+    }
+
     // Определяем приемники логов (mt - мультипоточный)
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
         std::string(logFile),
@@ -57,6 +62,14 @@ void logger::addFileSink(const std::string& logFile) {
         false           // Не ротировать при открытии
     );
     file_sink->set_pattern(PATTERN);
+
+    // Проверяем есть ли файл синк уже
+    for (const auto& sink : g_logger->sinks()) {
+        if (std::dynamic_pointer_cast<spdlog::sinks::rotating_file_sink_mt>(sink)) {
+            LOG_DEBUG("File sink already exists, skipping");
+            return;
+        }
+    }
 
     // Отключаем автоматический flush (слишком частые системные вызовы)
     g_logger->flush_on(spdlog::level::off);
