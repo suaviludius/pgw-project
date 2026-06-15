@@ -11,7 +11,7 @@ namespace protocol{
 using version_t = uint8_t;  // Версия протокола
 using command_t = uint8_t;  // Код команды (Command)
 using status_t = uint8_t;   // Код статуса (Status)
-using length_t = uint32_t;  // Длина поля data в байтах (Little-Endian)
+using length_t = uint32_t;  // Длина поля data в байтах (Little-Endian - host)
 using data_t = uint8_t;     // data
 
 // Версия протокола
